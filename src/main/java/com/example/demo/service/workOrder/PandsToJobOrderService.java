@@ -1,6 +1,7 @@
 package com.example.demo.service.workOrder;
 
 import com.aspose.cells.*;
+import com.example.demo.DTO.MarbleItemDto;
 import com.example.demo.models.*;
 import com.example.demo.payload.CheckLimitResponse;
 import com.example.demo.repository.*;
@@ -9,6 +10,7 @@ import com.example.demo.service.ChangeHistoryLog;
 import com.example.demo.service.pand.PandsService;
 import com.github.f4b6a3.uuid.UuidCreator;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
@@ -111,11 +113,11 @@ public class PandsToJobOrderService {
             if (pandsToJobOrderList != null) {
 //                pandsToJobOrder.setBlockNumber(pandsToJobOrderList.get(0).getBlockNumber());
 //                pandsToJobOrder.setFloor(pandsToJobOrderList.get(0).getFloor());
-                pandsToJobOrder.setJobOrderId(pandsToJobOrderList.get(0).getJobOrderId());
-                pandsToJobOrder.setJobOrderType(pandsToJobOrderList.get(0).getJobOrderType());
-                pandsToJobOrder.setEngineerName(pandsToJobOrderList.get(0).getEngineerName());
-                pandsToJobOrder.setOfficerName(pandsToJobOrderList.get(0).getOfficerName());
-                pandsToJobOrder.setInstallationArea(pandsToJobOrderList.get(0).getInstallationArea());
+                pandsToJobOrder.setJobOrderId(pandsToJobOrderList.getFirst().getJobOrderId());
+                pandsToJobOrder.setJobOrderType(pandsToJobOrderList.getFirst().getJobOrderType());
+                pandsToJobOrder.setEngineerName(pandsToJobOrderList.getFirst().getEngineerName());
+                pandsToJobOrder.setOfficerName(pandsToJobOrderList.getFirst().getOfficerName());
+                pandsToJobOrder.setInstallationArea(pandsToJobOrderList.getFirst().getInstallationArea());
             }
         }
 
@@ -142,7 +144,7 @@ public class PandsToJobOrderService {
         Date dNow = new Date();
         SimpleDateFormat ft =
                 new SimpleDateFormat("hh:mm:ss a");
-        pandsToJobOrder.setJobOrderTime(ft.format(dNow).toString());
+        pandsToJobOrder.setJobOrderTime(ft.format(dNow));
 
         UUID uuid = UuidCreator.getTimeBased();
 
@@ -1305,7 +1307,174 @@ public class PandsToJobOrderService {
     }
 
 
+    @RequestScope
+    @Transactional
+    public List<PandsToJobOrder> saveListJobOrderPands(List<MarbleItemDto> pandsToJobOrder, HttpServletRequest request) throws SQLException {
+        try {
+
+
+            List<PandsToJobOrder> pandsToJobOrders = mapTopandsToJobOrder(pandsToJobOrder);
+
+            if(pandsToJobOrders.getFirst().getFlag() == 1){
+                return pandsToJobOrders;
+            }
+
+            pandsToJobOrders.getFirst().setFlag(0);
+            Integer number = jobOrderService.getTheMaxNumber(pandsToJobOrders.getFirst().getProjectProfileId());
+            GregorianCalendar gcalendar = new GregorianCalendar();
+
+            JobOrder isJobOrderExist = new JobOrder();
+
+            String username = changeHistoryLog.getUser(request);
+
+            Date dNow = new Date();
+            SimpleDateFormat ft =
+                    new SimpleDateFormat("hh:mm:ss a");
+
+            DateFormat formatter1 = new SimpleDateFormat("dd.MM.yy");
+            isJobOrderExist.setProjectProfileId(pandsToJobOrders.getFirst().getProjectProfileId());
+            isJobOrderExist.setJobOrderDate(formatter1.format(dNow));
+            isJobOrderExist.setJobOrderTime(ft.format(dNow));
+            int nextNumber = number + 1;
+            isJobOrderExist.setJobOrderNumber(nextNumber + "/" + gcalendar.get(Calendar.YEAR));
+            isJobOrderExist.setNumber(number + 1);
+            isJobOrderExist.setProjectName(pandsToJobOrders.getFirst().getProjectName());
+            isJobOrderExist.setProjectCode(pandsToJobOrder.getFirst().getProjectCode());
+            isJobOrderExist.setInstallementArea(pandsToJobOrder.getFirst().getInstallationArea());
+            isJobOrderExist.setCreatedBy(username);
+            isJobOrderExist.setYear(gcalendar.get(Calendar.YEAR));
+            isJobOrderExist.setApproved(false);
+            isJobOrderExist.setPandsToJobOrders(new ArrayList<>());
+
+            changeHistoryLog.saveChange(pandsToJobOrder.getFirst().getProjectCode().concat("/") + nextNumber + "/" + gcalendar.get(Calendar.YEAR)
+                    , pandsToJobOrder.toString(), pandsToJobOrder.toString(), "save", request);
+
+            isJobOrderExist.getPandsToJobOrders().addAll(pandsToJobOrders);
+
+            pandsToJobOrderRepository.saveAll(pandsToJobOrders);
+            jobOrderRepository.save(isJobOrderExist);
+
+            return pandsToJobOrders;
+        }catch (Exception e){
+            e.printStackTrace();
+            List<PandsToJobOrder> pandsToJobOrders = new ArrayList<>();
+            PandsToJobOrder pandsToJobOrder1 = new PandsToJobOrder();
+            pandsToJobOrder1.setFlag(1);
+            pandsToJobOrder1.setMessage("Something Went Wrong");
+            pandsToJobOrders.add(pandsToJobOrder1);
+            return pandsToJobOrders;
+        }
+    }
+
+    private List<PandsToJobOrder> mapTopandsToJobOrder(List<MarbleItemDto> marbleItemDtos) {
+
+        double totalQuantity = 0;
+
+        List<String> distinctPands = marbleItemDtos.stream()
+                .map(MarbleItemDto::getPandCode)   // extract the unit field
+                .filter(Objects::nonNull)      // optional: skip null units
+                .distinct()                    // keep only unique values
+                .toList();
+
+        for (String distinctPand : distinctPands) {
+            double restQuantity = pandsRepository.findRestQuantityByPandCodeAndProjectProfileId(distinctPand, marbleItemDtos.getFirst().getProjectProfileId());
+            for (MarbleItemDto marbleItemDto : marbleItemDtos) {
+                if (marbleItemDto.getPandCode().equals(distinctPand)) {
+                    totalQuantity += marbleItemDto.getTotal();
+                }
+            }
+
+            if (totalQuantity > restQuantity) {
+                List<PandsToJobOrder> pandsToJobOrders = new ArrayList<>();
+                PandsToJobOrder pandsToJobOrder1 = new PandsToJobOrder();
+                pandsToJobOrder1.setFlag(1);
+                pandsToJobOrder1.setMessage(" The Required Quantity exceeding the remaining Quantity in pand " + distinctPand);
+                pandsToJobOrders.add(pandsToJobOrder1);
+                return pandsToJobOrders;
+            }
+        }
+        DecimalFormat df = new DecimalFormat("#.###");
+        for (String distinctPand : distinctPands) {
+            totalQuantity = 0;
+            double restQuantity = pandsRepository.findRestQuantityByPandCodeAndProjectProfileId(distinctPand, marbleItemDtos.getFirst().getProjectProfileId());
+            for (MarbleItemDto marbleItemDto : marbleItemDtos) {
+                if (marbleItemDto.getPandCode().equals(distinctPand)) {
+                    totalQuantity += Double.parseDouble(String.valueOf(marbleItemDto.getTotal()));
+                }
+            }
+            Pand pand = pandsService.getPandByPandCode(distinctPand, marbleItemDtos.getFirst().getProjectProfileId());
+
+            pand.setRestQuantity(Double.parseDouble(df.format(restQuantity - totalQuantity)));
+            pandsRepository.save(pand);
+        }
+
+        List<PandsToJobOrder> pandsToJobOrderList = new ArrayList<>();
+
+        Date dNow = new Date();
+        SimpleDateFormat ft =
+                new SimpleDateFormat("hh:mm:ss a");
+//        Integer number = jobOrderService.getTheMaxNumber(marbleItemDtos.getFirst().getProjectProfileId());
+        GregorianCalendar gcalendar = new GregorianCalendar();
+        Integer number = jobOrderRepository.findMaxNumber(marbleItemDtos.getFirst().getProjectProfileId());
+
+        int nextNumber = number + 1;
+
+
+        for (int i = 0; i < marbleItemDtos.size(); i++) {
+            Pand pand = pandsService.getPandByPandCode(marbleItemDtos.get(i).getPandCode(), marbleItemDtos.get(i).getProjectProfileId());
+
+            PandsToJobOrder pandsToJobOrder = new PandsToJobOrder();
+
+            pandsToJobOrder.setJobOrderTime(ft.format(dNow));
+
+            UUID uuid = UuidCreator.getTimeBased();
+
+            pandsToJobOrder.setRepetition(String.valueOf(marbleItemDtos.get(i).getRepetition()));
+            pandsToJobOrder.setMainQuantity(marbleItemDtos.get(i).getQuantity());
+            pandsToJobOrder.setUnit(marbleItemDtos.get(i).getUnit());
+            pandsToJobOrder.setHeight(marbleItemDtos.get(i).getHeight());
+            pandsToJobOrder.setWidth(marbleItemDtos.get(i).getWidth());
+
+            double repetation = 0;
+            if (pandsToJobOrder.getRepetition().equals("0") || pandsToJobOrder.getRepetition().isEmpty()) {
+                repetation = 1;
+                pandsToJobOrder.setRepetition(String.valueOf(Integer.parseInt("1")));
+            } else {
+                repetation = Double.parseDouble(pandsToJobOrder.getRepetition());
+            }
+            pandsToJobOrder.setQuantity(pandsToJobOrder.getMainQuantity() * repetation);
 
 
 
+//            restTotal = Double.parseDouble(df.format(pand.getRestQuantity() - total));
+            pandsToJobOrder.setJobOrderId(nextNumber + "/" + gcalendar.get(Calendar.YEAR));
+            pandsToJobOrder.setUniqueId(uuid.toString());
+            pandsToJobOrder.setTotal(df.format(marbleItemDtos.get(i).getTotal()));
+
+            pandsToJobOrder.setMainTotal(df.format(marbleItemDtos.get(i).getTotal()));
+            pandsToJobOrder.setThickness(String.valueOf(marbleItemDtos.get(i).getThickness()));
+            pandsToJobOrder.setPandCode(pand.getPandCode());
+            pandsToJobOrder.setManufacturingCode(marbleItemDtos.get(i).getManufacturingCode());
+            pandsToJobOrder.setManufacturing(pand.getManufacturing());
+            pandsToJobOrder.setJobOrderType(marbleItemDtos.getFirst().getJobOrderTybe());
+            pandsToJobOrder.setProjectCode(pand.getProjectCode());
+            pandsToJobOrder.setProjectName(pand.getProjectName());
+//            pandsToJobOrder.setQuantityInPand(restTotal);
+            pandsToJobOrder.setProjectProfileId(pand.getProjectProfileId());
+            pandsToJobOrder.setFinishType(pand.getFinishType());
+            pandsToJobOrder.setRawType(pand.getRawType());
+            pandsToJobOrder.setRawUsed(pand.getRawUsed());
+//            pandsToJobOrder.setBlockNumber(pandsToJobOrderList.getFirst().getBlockNumber());
+//            pandsToJobOrder.setFloor(pandsToJobOrderList.getFirst().getFloor());
+            pandsToJobOrder.setJobOrderType(marbleItemDtos.getFirst().getJobOrderTybe());
+            pandsToJobOrder.setEngineerName(marbleItemDtos.getFirst().getEngineerName());
+            pandsToJobOrder.setInstallationArea(marbleItemDtos.getFirst().getInstallationArea());
+            pandsToJobOrder.setDescription(marbleItemDtos.get(i).getDescription());
+            pandsToJobOrderList.add(pandsToJobOrder);
+
+//            pandsToJobOrderRepository.save(pandsToJobOrder);
+
+        }
+        return pandsToJobOrderList;
+    }
 }

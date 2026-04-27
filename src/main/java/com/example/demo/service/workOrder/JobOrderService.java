@@ -10,6 +10,7 @@ import com.example.demo.service.FileStorageService;
 import com.example.demo.service.data.RawTypeService;
 import com.example.demo.service.pand.PandsService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
@@ -263,7 +264,7 @@ public class JobOrderService {
         jobOrder.get().setPurchasingManager(false);
         jobOrder.get().setGeneralManager(false);
 
-        List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.getByJobOrderId(jobOrder.get().getJobOrderNumber());
+        List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.jobOrdersByJobOrderId(jobOrder.get().getProjectProfileId(), jobOrder.get().getJobOrderNumber());
         DecimalFormat df = new DecimalFormat("#.###");
         if (pandsToJobOrders != null) {
             for (int i = 0; i < pandsToJobOrders.size(); i++) {
@@ -293,30 +294,19 @@ public class JobOrderService {
         return jobOrder;
     }
 
-    public JobOrder copyJobORder(String jobOrder) throws SQLException {
+    public JobOrder copyJobORder(String jobOrder) throws SQLException, BadRequestException {
 
         GregorianCalendar gcalendar = new GregorianCalendar();
-//        Integer number = getTheMaxNumber();
-//        String jobOrderNumber = number + 1 + "/" + gcalendar.get(Calendar.YEAR);
-
-//
-//        newJobOrder.setNumber(number + 1);
-
-        JobOrder newJobOrder = new JobOrder();
-
         JobOrder jobOrder1 = jobOrderRepository.getByJobOrderNumber(jobOrder);
-
-//        ProjectProfile projectProfile = projectProfileRepository.getById(jobOrder1.getProjectProfileId());
-//        String jobOrderNumber = projectProfile.getJobOrderSerial() + 1  + "/" + gcalendar.get(Calendar.YEAR);
-
-//        projectProfile.setJobOrderSerial(projectProfile.getJobOrderSerial() + 1);
-
-        Integer nextWorkOrder = jobOrderRepository.findMaxNumber(jobOrder1.getProjectProfileId());
-        if(nextWorkOrder == null){
-            nextWorkOrder = 0;
+        if(!jobOrder1.isApproved()){
+            throw new BadRequestException();
         }
-        String jobOrderNumber = nextWorkOrder + "/" + gcalendar.get(Calendar.YEAR);
+        Integer number = getTheMaxNumber(jobOrder1.getProjectProfileId());
+        int nextNumber = number + 1;
+        String jobOrderNumber =jobOrder1.getProjectCode().concat("/") + nextNumber + "/" + gcalendar.get(Calendar.YEAR);
+        JobOrder newJobOrder = new JobOrder();
         newJobOrder.setJobOrderNumber(jobOrderNumber);
+        newJobOrder.setNumber(number + 1);
 
 
         newJobOrder.setInstallementArea(jobOrder1.getInstallementArea());
@@ -324,8 +314,8 @@ public class JobOrderService {
         newJobOrder.setProjectName(jobOrder1.getProjectName());
         newJobOrder.setProjectProfileId(jobOrder1.getProjectProfileId());
         newJobOrder.setYear(gcalendar.get(Calendar.YEAR));
-        newJobOrder.setNumber(nextWorkOrder + 1);
-        newJobOrder.setWorkOrderHeader(jobOrderNumber);
+        newJobOrder.setCommit(true);
+        newJobOrder.setApproved(true);
         DateFormat formatter1 = new SimpleDateFormat("dd.MM.yy");
 
         Date dNow = new Date();
@@ -333,7 +323,7 @@ public class JobOrderService {
                 new SimpleDateFormat("hh:mm:ss a");
 
         newJobOrder.setJobOrderDate(formatter1.format(dNow));
-        newJobOrder.setJobOrderTime(ft.format(dNow).toString());
+        newJobOrder.setJobOrderTime(ft.format(dNow));
 
         List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.getByJobOrderId(jobOrder);
 
@@ -347,24 +337,23 @@ public class JobOrderService {
         for (int i = 0; i < pandsToJobOrders.size(); i++) {
             PandsToJobOrder pandsToJobOrder = new PandsToJobOrder();
             Pand pand = pandsService.getPandByPandCode(pandsToJobOrders.get(i).getPandCode(), pandsToJobOrders.get(i).getProjectProfileId());
-            pand.setRestQuantity(Double.valueOf(df.format(pand.getRestQuantity() - Double.valueOf(pandsToJobOrders.get(i).getTotal()))));
+            pand.setRestQuantity(Double.parseDouble(df.format(pand.getRestQuantity() - Double.parseDouble(pandsToJobOrders.get(i).getTotal()))));
             pandsRepository.save(pand);
-            long currentTimeMillis = System.currentTimeMillis();
-            long leastSigBits = currentTimeMillis;
+            long leastSigBits = System.currentTimeMillis();
             long mostSigBits = Instant.now().getEpochSecond();
             UUID uuid = new UUID(mostSigBits, leastSigBits);
 //            pandsToJobOrderRepository.getByUniqueId(uuid.toString());
             pandsToJobOrder.setUniqueId(uuid.toString());
 
-            double total;
-
-            if (pandsToJobOrders.get(i).getUnit().equals("Square Meter")) {
-                total = (Double.valueOf(pandsToJobOrders.get(i).getHeight()) * Double.valueOf(pandsToJobOrders.get(i).getWidth()) * Double.valueOf(pandsToJobOrders.get(i).getQuantity() * Double.valueOf(pandsToJobOrders.get(i).getRepetition()))) / 10000;
-            } else if (pandsToJobOrders.get(i).getUnit().equals("Longitudinal meter")) {
-                total = (Double.valueOf(pandsToJobOrders.get(i).getHeight()) * Double.valueOf(pandsToJobOrders.get(i).getQuantity() * Double.valueOf(pandsToJobOrders.get(i).getRepetition()))) / 100;
-            } else {
-                total = Double.valueOf(pandsToJobOrders.get(i).getQuantity() * Double.valueOf(pandsToJobOrders.get(i).getRepetition()));
-            }
+//            double total;
+//
+//            if (pandsToJobOrders.get(i).getUnit().equals("متر مربع")) {
+//                total = (Double.parseDouble(pandsToJobOrders.get(i).getHeight()) * Double.parseDouble(pandsToJobOrders.get(i).getWidth()) * (pandsToJobOrders.get(i).getQuantity() * Double.parseDouble(pandsToJobOrders.get(i).getRepetition()))) / 10000;
+//            } else if (pandsToJobOrders.get(i).getUnit().equals("متر طولى")) {
+//                total = (Double.parseDouble(pandsToJobOrders.get(i).getHeight()) * (pandsToJobOrders.get(i).getQuantity() * Double.parseDouble(pandsToJobOrders.get(i).getRepetition()))) / 100;
+//            } else {
+//                total = pandsToJobOrders.get(i).getQuantity() * Double.parseDouble(pandsToJobOrders.get(i).getRepetition());
+//            }
 
             pandsToJobOrder.setTotal(pandsToJobOrders.get(i).getMainTotal());
             pandsToJobOrder.setMainTotal(pandsToJobOrders.get(i).getMainTotal());
@@ -629,5 +618,16 @@ public class JobOrderService {
         jobOrderRepository.save(jobOrder);
 
         return jobOrder;
+    }
+
+    public Integer getTheMaxNumber(Long projectId) {
+
+        Integer number = jobOrderRepository.findMaxNumber(projectId);
+
+        if (number == null) {
+            number = 0;
+        }
+
+        return number;
     }
 }

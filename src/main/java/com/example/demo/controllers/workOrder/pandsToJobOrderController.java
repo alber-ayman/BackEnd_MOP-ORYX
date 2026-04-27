@@ -1,5 +1,6 @@
 package com.example.demo.controllers.workOrder;
 
+import com.example.demo.DTO.MarbleItemDto;
 import com.example.demo.models.*;
 import com.example.demo.payload.CheckLimitResponse;
 import com.example.demo.service.ExcelFileService;
@@ -260,7 +261,11 @@ public class pandsToJobOrderController {
         }
     }
 
-
+    @PostMapping("/savePandToJobOrdersList")
+    public ResponseEntity<?> save(@RequestBody List<MarbleItemDto> items, HttpServletRequest request) throws SQLException {
+        List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderService.saveListJobOrderPands(items, request);
+        return ResponseEntity.ok(pandsToJobOrders);
+    }
 
 
 }

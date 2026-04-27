@@ -9,11 +9,11 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.example</groupId>
-    <artifactId>demo</artifactId>
+    <artifactId>ORYX</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>demo</name>
-    <description>Demo project for Spring Boot</description>
+    <name>ORYX</name>
+    <description>ORYX MOP</description>
     <url/>
     <licenses>
         <license/>
@@ -170,7 +170,7 @@
     </repositories>
 
     <build>
-        <finalName>Al-Sarh</finalName>
+        <finalName>ORYX</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

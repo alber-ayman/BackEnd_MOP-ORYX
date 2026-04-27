@@ -40,4 +40,7 @@ public interface PandsRepository extends JpaRepository<Pand, Long> {
     @Query(value = "SELECT distinct(raw_type) FROM pand where project_profile_id = :projectCode", nativeQuery = true)
     List<String> getRawTypeByProjectId(@Param("projectCode") Long projectCode);
 
+    @Query("SELECT p.restQuantity FROM Pand p WHERE p.pandCode = :pandCode AND p.projectProfileId = :projectProfileId")
+    double findRestQuantityByPandCodeAndProjectProfileId(@Param("pandCode") String pandCode,
+                                                         @Param("projectProfileId") Long projectProfileId);
 }

@@ -24,10 +24,10 @@ public class JwtUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
-    @Value("${Marbella-Art.app.jwtSecret}")
+    @Value("${ORYX.app.jwtSecret}")
     private String jwtSecret;
 
-    @Value("${Marbella-Art.app.jwtExpirationMs}")
+    @Value("${ORYX.app.jwtExpirationMs}")
     private int jwtExpirationMs;
 
     public String userName;

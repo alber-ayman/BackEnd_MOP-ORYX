@@ -82,6 +82,8 @@ public class Pand {
 
     private double rawMainQuantity;
 
+    private String manufacturing;
+
     @Lob
     @Column(columnDefinition = "LONGBLOB")
     private byte[] image;

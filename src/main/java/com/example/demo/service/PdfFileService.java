@@ -268,8 +268,8 @@ public class PdfFileService {
             int i = 0;
             DecimalFormat df = new DecimalFormat("#.###");
             for (int k = 0; k < jobOrdersByRawType.size(); k++) {
-                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.jobOrdersByUnit(jobOrderParent.getPandsToJobOrderList().get(0).getProjectCode()
-                        , jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId()
+                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.jobOrdersByUnit(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+                        , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId()
                         , jobOrdersByRawType.get(k)));
                 System.out.println("jobOrdersByThickness size: " + jobOrdersByThickness.size());
                 System.out.println("out k=0");
@@ -277,10 +277,10 @@ public class PdfFileService {
                     System.out.println("innn k=0");
                     unifiedSerial = jobOrdersByThickness.get(0).getUnifiedSerial();
 
-                    sheet.getCells().get("G3").putValue(jobOrdersByThickness.get(0).getSerialNumber());
+                    sheet.getCells().get("G3").putValue(jobOrdersByThickness.getFirst().getSerialNumber());
                     sheet.getCells().get("G3").setStyle(discriptionDataStyle);
 
-                    sheet.getCells().get("G5").putValue(jobOrdersByThickness.get(0).getUnifiedSerial());
+                    sheet.getCells().get("G5").putValue(jobOrdersByThickness.getFirst().getUnifiedSerial());
                     sheet.getCells().get("G5").setStyle(discriptionDataStyle);
                 }
 
@@ -348,15 +348,15 @@ public class PdfFileService {
 
                     String formattedNumber = "";
                     if (jobOrdersByThickness.get(i).getUnit().equals("Longitudinal meter")) {
-                        result = (Double.valueOf(jobOrdersByThickness.get(i).getHeight())) *
-                                (Double.valueOf(jobOrdersByThickness.get(i).getQuantity()));
+                        result = (Double.parseDouble(jobOrdersByThickness.get(i).getHeight())) *
+                                (jobOrdersByThickness.get(i).getQuantity());
                         formattedNumber = df.format(result / 100);
                         unit = "Longitudinal meter";
 
                     } else if (jobOrdersByThickness.get(i).getUnit().equals("Square Meter")) {
-                        result = (Double.valueOf(jobOrdersByThickness.get(i).getHeight())) *
-                                (Double.valueOf(jobOrdersByThickness.get(i).getWidth())) *
-                                (Double.valueOf(jobOrdersByThickness.get(i).getQuantity()));
+                        result = (Double.parseDouble(jobOrdersByThickness.get(i).getHeight())) *
+                                (Double.parseDouble(jobOrdersByThickness.get(i).getWidth())) *
+                                (jobOrdersByThickness.get(i).getQuantity());
                         formattedNumber = df.format(result / 10000);
                         unit = "Square Meter";
 
@@ -366,7 +366,7 @@ public class PdfFileService {
                         sheet.getCells().get("L" + rowIdx).putValue(formattedNumber + " " + unit);
                     }
 
-                    total += Double.valueOf(formattedNumber);
+                    total += Double.parseDouble(formattedNumber);
 
                     sheet.getCells().get("L" + rowIdx).putValue(formattedNumber);
                     sheet.getCells().get("M" + rowIdx).putValue(unit);
@@ -450,7 +450,7 @@ public class PdfFileService {
             sheet.getCells().get("H" + rowIdx).setStyle(tableHeaderStyle);
 
 
-            List<String> pands = exitProcessJobOrderRepository.getJobOrderDetails(jobOrderParent.getPandsToJobOrderList().get(0).getProjectCode(), jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId());
+            List<String> pands = exitProcessJobOrderRepository.getJobOrderDetails(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode(), jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
 
             System.out.println("2222222222222222");
             double totalBillQuantity = 0.0;
@@ -474,7 +474,7 @@ public class PdfFileService {
                 sheet.getCells().get("F" + rowIdx).setStyle(tableHeaderStyle);
 
                 String cost = df.format(totalQuantityInMeter * pand.getPrice());
-                billTotalPrice += Double.valueOf(cost);
+                billTotalPrice += Double.parseDouble(cost);
                 sheet.getCells().get("G" + rowIdx).putValue(pand.getPrice());
                 sheet.getCells().get("G" + rowIdx).setStyle(tableHeaderStyle);
 
@@ -511,7 +511,7 @@ public class PdfFileService {
 
             exitProcessJobOrderRepository.deleteAll();
 
-            changeHistoryLog.saveChange(jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId(), jobOrderParent.getPandsToJobOrderList().toString(), jobOrderParent.getPandsToJobOrderList().toString(), "exit job order", request);
+            changeHistoryLog.saveChange(jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId(), jobOrderParent.getPandsToJobOrderList().toString(), jobOrderParent.getPandsToJobOrderList().toString(), "exit job order", request);
 
 
             return resource;
@@ -523,12 +523,12 @@ public class PdfFileService {
         return null;
     }
 
-    public boolean deductingQuantityFromPands(JobOrderParent jobOrderParent) {
+    public void deductingQuantityFromPands(JobOrderParent jobOrderParent) {
         try {
 
             List<String> jobOrdersByRawType = exitProcessJobOrderRepository.jobOrdersByRawType
-                    (jobOrderParent.getPandsToJobOrderList().get(0).getProjectCode()
-                            , jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId());
+                    (jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+                            , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
 
             List<ExitProcessJobOrder> jobOrdersByThickness = new ArrayList<>();
 
@@ -538,8 +538,8 @@ public class PdfFileService {
             int i = 0;
             for (int k = 0; k < jobOrdersByRawType.size(); k++) {
                 System.out.println("jobOrdersByRawType " + k);
-                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.jobOrdersByUnit(jobOrderParent.getPandsToJobOrderList().get(0).getProjectCode()
-                        , jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId()
+                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.jobOrdersByUnit(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+                        , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId()
                         , jobOrdersByRawType.get(k)));
 
                 for (; i < jobOrdersByThickness.size(); i++) {
@@ -547,33 +547,32 @@ public class PdfFileService {
                     double result = 0.0;
                     String formattedNumber = "";
                     if (jobOrdersByThickness.get(i).getUnit().equals("Longitudinal meter")) {
-                        result = (Double.valueOf(jobOrdersByThickness.get(i).getHeight())) *
-                                (Double.valueOf(jobOrdersByThickness.get(i).getQuantity()));
+                        result = (Double.parseDouble(jobOrdersByThickness.get(i).getHeight())) *
+                                (jobOrdersByThickness.get(i).getQuantity());
                         formattedNumber = df.format(result / 100);
 
                     } else if (jobOrdersByThickness.get(i).getUnit().equals("Square Meter")) {
-                        result = (Double.valueOf(jobOrdersByThickness.get(i).getHeight())) *
-                                (Double.valueOf(jobOrdersByThickness.get(i).getWidth())) *
-                                (Double.valueOf(jobOrdersByThickness.get(i).getQuantity()));
+                        result = (Double.parseDouble(jobOrdersByThickness.get(i).getHeight())) *
+                                (Double.parseDouble(jobOrdersByThickness.get(i).getWidth())) *
+                                (jobOrdersByThickness.get(i).getQuantity());
                         formattedNumber = df.format(result / 10000);
 
                     } else {
                         formattedNumber = String.valueOf(jobOrdersByThickness.get(i).getQuantity());
                     }
 
-                    PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository.findByUniqueIdAndJobOrderIdAndWidthAndHeight(jobOrdersByThickness.get(i).getUniqueId(), jobOrdersByThickness.get(i).getJobOrderId()
+                    PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository.findByUniqueIdAndJobOrderIdAndWidthAndHeight
+                            (jobOrdersByThickness.get(i).getUniqueId(), jobOrdersByThickness.get(i).getJobOrderId()
                             ,jobOrdersByThickness.get(i).getWidth(),jobOrdersByThickness.get(i).getHeight());
-                    String totalAfterExit = String.valueOf(df.format(Double.valueOf(pandsToJobOrder.getTotal()) - Double.valueOf(formattedNumber)));
+                    String totalAfterExit = String.valueOf(df.format(Double.parseDouble(pandsToJobOrder.getTotal()) - Double.parseDouble(formattedNumber)));
                     pandsToJobOrder.setTotal(totalAfterExit);
                     double result2 = pandsToJobOrder.getQuantity() - jobOrdersByThickness.get(i).getQuantity();
                     pandsToJobOrder.setQuantity(result2);
                     pandsToJobOrderRepository.save(pandsToJobOrder);
                 }
             }
-            return true;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
         }
     }
 
