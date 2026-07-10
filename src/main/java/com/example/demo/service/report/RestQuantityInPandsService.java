@@ -151,70 +151,70 @@ public class RestQuantityInPandsService {
             List<String> units = pandsRepository.getAllUnits(id);
 
 
-            for (int k = 0; k < units.size(); k++) {
+            for (String s : units) {
 
-                List<Pand> pands = pandsRepository.getPandByProjectIdGroupByUnit(id, units.get(k));
-                Double result = 0.0;
+                List<Pand> pands = pandsRepository.getPandByProjectIdGroupByUnit(id, s);
+                double result = 0.0;
 
-                for (int i = 0; i < pands.size(); i++) {
+                for (Pand pand : pands) {
 
                     Row row = sheet.createRow(rowIdx);
                     Cell cellRawType = row.createCell(0);
-                    cellRawType.setCellValue(pands.get(i).getProjectName());
+                    cellRawType.setCellValue(pand.getProjectName());
                     cellRawType.setCellStyle(cellStyle);
 
                     Cell projectCode = row.createCell(1);
-                    projectCode.setCellValue(pands.get(i).getProjectCode());
+                    projectCode.setCellValue(pand.getProjectCode());
                     projectCode.setCellStyle(cellStyle);
 
                     Cell engName = row.createCell(2);
-                    engName.setCellValue(pands.get(i).getEngineerName());
+                    engName.setCellValue(pand.getEngineerName());
                     engName.setCellStyle(cellStyle);
 
                     Cell pandCode = row.createCell(3);
-                    pandCode.setCellValue(pands.get(i).getPandCode());
+                    pandCode.setCellValue(pand.getPandCode());
                     pandCode.setCellStyle(cellStyle);
 
                     Cell discription = row.createCell(4);
-                    discription.setCellValue(pands.get(i).getDescription());
+                    discription.setCellValue(pand.getDescription());
                     discription.setCellStyle(cellStyle);
 
 
                     Cell rawType = row.createCell(5);
-                    rawType.setCellValue(pands.get(i).getRawType());
+                    rawType.setCellValue(pand.getRawType());
                     rawType.setCellStyle(cellStyle);
 
                     Cell rawUsed = row.createCell(6);
-                    rawUsed.setCellValue(pands.get(i).getRawUsed());
+                    rawUsed.setCellValue(pand.getRawUsed());
                     rawUsed.setCellStyle(cellStyle);
 
                     Cell finishType = row.createCell(7);
-                    finishType.setCellValue(pands.get(i).getFinishType());
+                    finishType.setCellValue(pand.getFinishType());
                     finishType.setCellStyle(cellStyle);
 
                     Cell thickness = row.createCell(8);
-                    thickness.setCellValue(pands.get(i).getThickness());
+                    thickness.setCellValue(pand.getThickness());
                     thickness.setCellStyle(cellStyle);
 
                     Cell height = row.createCell(9);
-                    height.setCellValue(pands.get(i).getHeight());
+                    height.setCellValue(pand.getHeight());
                     height.setCellStyle(cellStyle);
 
                     Cell width = row.createCell(10);
-                    width.setCellValue(pands.get(i).getWidth());
+                    width.setCellValue(pand.getWidth());
                     width.setCellStyle(cellStyle);
 
                     Cell unit = row.createCell(11);
-                    unit.setCellValue(pands.get(i).getUnit());
+                    unit.setCellValue(pand.getUnit());
                     unit.setCellStyle(cellStyle);
 
                     Cell quantity = row.createCell(12);
-                    quantity.setCellValue(pands.get(i).getRestQuantity());
+                    quantity.setCellValue(pand.getRestQuantity());
                     quantity.setCellStyle(cellStyle);
 
                     rowIdx++;
 
-                    result += pands.get(i).getRestQuantity();
+                    result += pand.getRestQuantity();
                 }
 
                 Row rowResult = sheet.createRow(rowIdx);
@@ -374,9 +374,9 @@ public class RestQuantityInPandsService {
 
         List<String> units = pandsRepository.getAllUnits(id);
 
-        for (int k = 0; k < units.size(); k++) {
+        for (String unit : units) {
 
-            List<Pand> pands = pandsRepository.getPandByProjectIdGroupByUnit(id, units.get(k));
+            List<Pand> pands = pandsRepository.getPandByProjectIdGroupByUnit(id, unit);
             Double result = 0.0;
             for (int i = 0; i < pands.size(); i++) {
 
@@ -384,19 +384,19 @@ public class RestQuantityInPandsService {
                     sheet.getCells().get("A1").putValue("Project Name: ");
                     sheet.getCells().get("A1").setStyle(discriptionDataStyle);
 
-                    sheet.getCells().get("B1").putValue(pands.get(0).getProjectName());
+                    sheet.getCells().get("B1").putValue(pands.getFirst().getProjectName());
                     sheet.getCells().get("B1").setStyle(discriptionDataStyle);
 
                     sheet.getCells().get("A3").putValue("Project Code: ");
                     sheet.getCells().get("A3").setStyle(discriptionDataStyle);
 
-                    sheet.getCells().get("B3").putValue(pands.get(0).getProjectCode());
+                    sheet.getCells().get("B3").putValue(pands.getFirst().getProjectCode());
                     sheet.getCells().get("B3").setStyle(discriptionDataStyle);
 
                     sheet.getCells().get("D1").putValue("Engineer Name: ");
                     sheet.getCells().get("D1").setStyle(discriptionDataStyle);
 
-                    sheet.getCells().get("E1").putValue(pands.get(0).getEngineerName());
+                    sheet.getCells().get("E1").putValue(pands.getFirst().getEngineerName());
                     sheet.getCells().get("E1").setStyle(discriptionDataStyle);
                 }
 
@@ -457,9 +457,8 @@ public class RestQuantityInPandsService {
 
         // 4. Return the PDF as a response
         ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(pdfOutputStream.toByteArray());
-        InputStreamResource resource = new InputStreamResource(pdfInputStream);
 
-        return resource;
+        return new InputStreamResource(pdfInputStream);
     }
 
 

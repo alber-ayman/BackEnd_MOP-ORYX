@@ -44,12 +44,12 @@ public class ExitJobOrderService {
 
     }
 
-    public ResponseEntity<JobOrderParent> saveChildPand(JobOrderParent exitJobOrders, String unifiedSerial) throws ParseException {
+    public ResponseEntity<JobOrderParent> saveChildPand(JobOrderParent exitJobOrders, String unifiedSerial) {
         try {
 
-            List<ExitJobOrder> jobOrders = exitJobOrderRepository.getByUnifiedSerial(unifiedSerial);
+            List<ExitJobOrder> jobOrders = exitJobOrderRepository.findByUnifiedSerial(unifiedSerial);
             System.out.println("starting saveExitJobOrder");
-            if (jobOrders.size() > 0) {
+            if (!jobOrders.isEmpty()) {
                 exitJobOrders.setFlag(1);
                 exitJobOrders.setMessage("Bill Number is Already Taken");
                 return new ResponseEntity<>(exitJobOrders, HttpStatus.OK);
@@ -63,16 +63,16 @@ public class ExitJobOrderService {
                 }
             }
 
-            Double total = 0.0;
+            Double total ;
             DecimalFormat df = new DecimalFormat("#.###");
 //        NumberFormat format = NumberFormat.getInstance(Locale.US);
             String serialNumber = "";
-            List<PandsToJobOrder> pandsToJobOrder = pandsToJobOrderService.getByJobOrderId(exitJobOrders.getPandsToJobOrderList().get(0).getJobOrderId());
+            List<PandsToJobOrder> pandsToJobOrder = pandsToJobOrderService.getByJobOrderId(exitJobOrders.getPandsToJobOrderList().getFirst().getJobOrderId());
 
             int count = 0;
             for (int i = 0; i < exitJobOrders.getPandsToJobOrderList().size(); i++) {
                 count++;
-                ExitJobOrder exitJobOrder = new ExitJobOrder();
+                ExitJobOrder exitJobOrder ;
                 exitJobOrder = mappingJobOrder(exitJobOrders.getPandsToJobOrderList().get(i));
                 System.out.println("unit: " + exitJobOrders.getPandsToJobOrderList().get(i).getUnit());
                 if (exitJobOrders.getPandsToJobOrderList().get(i).getUnit().equals("Square Meter")) {
@@ -88,17 +88,17 @@ public class ExitJobOrderService {
                 System.out.println(":::::: " + total + " ::::::");
                 System.out.println("quantyyyy:" + exitJobOrders.getPandsToJobOrderList().get(i).getQuantity());
 
-                for (int k = 0; k < pandsToJobOrder.size(); k++) {
-                    if ((exitJobOrder.getPandCode().equals(pandsToJobOrder.get(k).getPandCode()))
-                            && (exitJobOrder.getProjectCode().equals(pandsToJobOrder.get(k).getProjectCode()))
-                            && (exitJobOrder.getHeight().equals(pandsToJobOrder.get(k).getHeight()))
-                            && (exitJobOrder.getWidth().equals(pandsToJobOrder.get(k).getWidth()))
-                            && (exitJobOrder.getUniqueId().equals(pandsToJobOrder.get(k).getUniqueId()))
+                for (PandsToJobOrder toJobOrder : pandsToJobOrder) {
+                    if ((exitJobOrder.getPandCode().equals(toJobOrder.getPandCode()))
+                            && (exitJobOrder.getProjectCode().equals(toJobOrder.getProjectCode()))
+                            && (exitJobOrder.getHeight().equals(toJobOrder.getHeight()))
+                            && (exitJobOrder.getWidth().equals(toJobOrder.getWidth()))
+                            && (exitJobOrder.getUniqueId().equals(toJobOrder.getUniqueId()))
                     ) {
-                        exitJobOrder.setManufacturingCode(pandsToJobOrder.get(k).getManufacturingCode());
-                        if (pandsToJobOrder.get(k).getQuantity() < exitJobOrder.getQuantity()) {
+                        exitJobOrder.setManufacturingCode(toJobOrder.getManufacturingCode());
+                        if (toJobOrder.getQuantity() < exitJobOrder.getQuantity()) {
                             exitJobOrders.setFlag(1);
-                            exitJobOrders.setMessage("The Required Quantity " + exitJobOrder.getQuantity() + " Exceeding Quantity In BOQ Item " + pandsToJobOrder.get(k).getPandCode());
+                            exitJobOrders.setMessage("The Required Quantity " + exitJobOrder.getQuantity() + " Exceeding Quantity In BOQ Item " + toJobOrder.getPandCode());
                             return new ResponseEntity<>(exitJobOrders, HttpStatus.OK);
                         }
                     }
@@ -173,20 +173,13 @@ public class ExitJobOrderService {
         return timestamp + uniqueId;
     }
 
-    public static String generateUniqueId() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHss");
-        String timestamp = sdf.format(new Date());
-        return timestamp;
-    }
-
-
     public List<ExitJobOrder> getByJobOrderId(String id) {
 
-        return exitJobOrderRepository.getByJobOrderId(id);
+        return exitJobOrderRepository.findByJobOrderId(id);
     }
 
     public ResponseEntity<List<ExitJobOrder>> getAllExitJobOrders(String jobOrderid) {
-        return new ResponseEntity<>(exitJobOrderRepository.getByJobOrderId(jobOrderid), HttpStatus.OK);
+        return new ResponseEntity<>(exitJobOrderRepository.findByJobOrderId(jobOrderid), HttpStatus.OK);
     }
 
     public ResponseEntity<ExitJobOrder> getExitById(Long jobOrderid) {
@@ -196,66 +189,207 @@ public class ExitJobOrderService {
 
     public void checkQuantity() {
         List<ExitJobOrder> jobOrder = exitJobOrderRepository.findAll();
-        for (int i = 0; i < jobOrder.size(); i++) {
-            if (jobOrder.get(i).getQuantity() == 0) {
-                exitJobOrderRepository.delete(jobOrder.get(i));
+        for (ExitJobOrder exitJobOrder : jobOrder) {
+            if (exitJobOrder.getQuantity() == 0) {
+                exitJobOrderRepository.delete(exitJobOrder);
             }
         }
     }
+
 
     public CheckLimitResponse returnJobOrder(JobOrderParent jobOrderParent) {
 
         CheckLimitResponse checkLimitResponse = new CheckLimitResponse();
+
+        DecimalFormat df = new DecimalFormat("#.###");
+
         for (int i = 0; i < jobOrderParent.getPandsToJobOrderList().size(); i++) {
-            List<ExitJobOrder> jobOrder = exitJobOrderRepository.getByUniqueId(jobOrderParent.getPandsToJobOrderList().get(i).getUniqueId());
-            PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository.getByUniqueId(jobOrder.get(0).getUniqueId());
-//            double value = Double.valueOf(pandsToJobOrder.getTotal()) + Double.valueOf(jobOrderParent.getPandsToJobOrderList().get(i).getTotal());
+
+            PandsToJobOrder requestItem =
+                    jobOrderParent.getPandsToJobOrderList().get(i);
+
+        /*
+         |--------------------------------------------------------------------------
+         | GET EXIT JOB ORDER
+         |--------------------------------------------------------------------------
+         */
+
+            ExitJobOrder exitJobOrder = exitJobOrderRepository
+                    .findByUniqueId(requestItem.getUniqueId())
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "Exit Job Order not found for uniqueId: "
+                                            + requestItem.getUniqueId()
+                            )
+                    );
+
+        /*
+         |--------------------------------------------------------------------------
+         | GET ORIGINAL PANDS JOB ORDER
+         |--------------------------------------------------------------------------
+         */
+
+            PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository
+                    .findByUniqueId(exitJobOrder.getUniqueId())
+                    .orElseThrow(() ->
+                            new RuntimeException(
+                                    "Pands To Job Order not found for uniqueId: "
+                                            + exitJobOrder.getUniqueId()
+                            )
+                    );
+
+        /*
+         |--------------------------------------------------------------------------
+         | CALCULATE TOTAL
+         |--------------------------------------------------------------------------
+         */
 
             double total;
-            DecimalFormat df = new DecimalFormat("#.###");
 
-            if (jobOrder.get(0).getUnit().equals("Square Meter")) {
-                total = (Double.valueOf(jobOrder.get(0).getHeight()) * Double.valueOf(jobOrder.get(0).getWidth()) * Double.valueOf(jobOrder.get(0).getQuantity())) / 10000;
-            } else if (jobOrder.get(0).getUnit().equals("Longitudinal meter")) {
-                total = (Double.valueOf(jobOrder.get(0).getHeight()) * Double.valueOf(jobOrder.get(0).getQuantity())) / 100;
+            if ("Square Meter".equals(exitJobOrder.getUnit())) {
+
+                total =
+                        (
+                                Double.parseDouble(exitJobOrder.getHeight())
+                                        * Double.parseDouble(exitJobOrder.getWidth())
+                                        * requestItem.getQuantity()
+                        ) / 10000;
+
+            } else if ("Longitudinal meter".equals(exitJobOrder.getUnit())) {
+
+                total =
+                        (
+                                Double.parseDouble(exitJobOrder.getHeight())
+                                        * requestItem.getQuantity()
+                        ) / 100;
+
             } else {
-                total = Double.valueOf(jobOrder.get(0).getQuantity());
+
+                total = requestItem.getQuantity();
             }
 
-            if (total > Double.valueOf(pandsToJobOrder.getMainTotal())) {
+        /*
+         |--------------------------------------------------------------------------
+         | VALIDATION
+         |--------------------------------------------------------------------------
+         */
+
+            double mainTotal =
+                    Double.parseDouble(pandsToJobOrder.getMainTotal());
+
+            if (total > mainTotal) {
+
                 checkLimitResponse.setFlag(1);
-                checkLimitResponse.setMessage("الكمية المرجعه تتخطى الكمية الأساسية فى بند رقم " + pandsToJobOrder.getPandCode());
-                return checkLimitResponse;
-            } else {
-                checkLimitResponse.setFlag(0);
-                checkLimitResponse.setMessage("تم أرجاع أوامر الشغل المحدده بنجاح" + pandsToJobOrder.getPandCode());
-            }
-            pandsToJobOrder.setQuantity(pandsToJobOrder.getQuantity() + (jobOrderParent.getPandsToJobOrderList().get(i).getQuantity()));
-//            pandsToJobOrder.setTotal(String.valueOf(Double.valueOf(pandsToJobOrder.getTotal()) + Double.valueOf(df.format(total))));
-            pandsToJobOrderRepository.save(pandsToJobOrder);
-            jobOrder.get(jobOrder.size() - 1).setQuantity(jobOrder.get(jobOrder.size() - 1).getQuantity() + jobOrderParent.getPandsToJobOrderList().get(i).getQuantity());
-            jobOrder.get(jobOrder.size() - 1).setTotal(String.valueOf(Double.valueOf(jobOrder.get(jobOrder.size() - 1).getTotal()) + Double.valueOf(df.format(total))));
-            exitJobOrderRepository.save(jobOrder.get(jobOrder.size() - 1));
+                checkLimitResponse.setMessage(
+                        "Returned Number Incorrect For: "
+                                + pandsToJobOrder.getPandCode()
+                );
 
+                return checkLimitResponse;
+            }
+
+        /*
+         |--------------------------------------------------------------------------
+         | UPDATE PANDS TO JOB ORDER
+         |--------------------------------------------------------------------------
+         */
+
+            pandsToJobOrder.setQuantity(
+                    pandsToJobOrder.getQuantity()
+                            + requestItem.getQuantity()
+            );
+
+            pandsToJobOrderRepository.save(pandsToJobOrder);
+
+        /*
+         |--------------------------------------------------------------------------
+         | UPDATE EXIT JOB ORDER
+         |--------------------------------------------------------------------------
+         */
+
+            exitJobOrder.setQuantity(
+                    exitJobOrder.getQuantity()
+                            + requestItem.getQuantity()
+            );
+
+            exitJobOrder.setTotal(
+                    String.valueOf(
+                            Double.parseDouble(exitJobOrder.getTotal())
+                                    + Double.parseDouble(df.format(total))
+                    )
+            );
+
+            exitJobOrderRepository.save(exitJobOrder);
+
+        /*
+         |--------------------------------------------------------------------------
+         | SUCCESS RESPONSE
+         |--------------------------------------------------------------------------
+         */
+
+            checkLimitResponse.setFlag(0);
+            checkLimitResponse.setMessage(
+                    "Returned Successfully For: "
+                            + pandsToJobOrder.getPandCode()
+            );
         }
+
         return checkLimitResponse;
     }
 
+
+//    public CheckLimitResponse returnJobOrderOld(JobOrderParent jobOrderParent) {
+//
+//        CheckLimitResponse checkLimitResponse = new CheckLimitResponse();
+//        for (int i = 0; i < jobOrderParent.getPandsToJobOrderList().size(); i++) {
+//            Optional<ExitJobOrder> jobOrder = exitJobOrderRepository.findByUniqueId(jobOrderParent.getPandsToJobOrderList().get(i).getUniqueId());
+//            Optional<PandsToJobOrder> pandsToJobOrder = pandsToJobOrderRepository.findByUniqueId(jobOrder.get().getUniqueId());
+////            double value = Double.valueOf(pandsToJobOrder.getTotal()) + Double.valueOf(jobOrderParent.getPandsToJobOrderList().get(i).getTotal());
+//
+//            double total;
+//            DecimalFormat df = new DecimalFormat("#.###");
+//
+//            if (jobOrder.get().getUnit().equals("Square Meter")) {
+//                total = (Double.parseDouble(jobOrder.get().getHeight()) * Double.parseDouble(jobOrder.get().getWidth()) * jobOrder.get().getQuantity()) / 10000;
+//            } else if (jobOrder.get().getUnit().equals("Longitudinal meter")) {
+//                total = (Double.parseDouble(jobOrder.get().getHeight()) * jobOrder.get().getQuantity()) / 100;
+//            } else {
+//                total = jobOrder.get().getQuantity();
+//            }
+//
+//            if (total > Double.parseDouble(pandsToJobOrder.get().getMainTotal())) {
+//                checkLimitResponse.setFlag(1);
+//                checkLimitResponse.setMessage("Returned Number Incorrect For: " + pandsToJobOrder.get().getPandCode());
+//                return checkLimitResponse;
+//            } else {
+//                checkLimitResponse.setFlag(0);
+//                checkLimitResponse.setMessage("Returned Successfully" + pandsToJobOrder.get().getPandCode());
+//            }
+//            pandsToJobOrder.get().setQuantity(pandsToJobOrder.get().getQuantity() + (jobOrderParent.getPandsToJobOrderList().get(i).getQuantity()));
+////            pandsToJobOrder.setTotal(String.valueOf(Double.valueOf(pandsToJobOrder.getTotal()) + Double.valueOf(df.format(total))));
+//            pandsToJobOrderRepository.save(pandsToJobOrder.get());
+//            jobOrder.get(jobOrder.size() - 1).setQuantity(jobOrder.get(jobOrder.size() - 1).getQuantity() + jobOrderParent.getPandsToJobOrderList().get(i).getQuantity());
+//            jobOrder.get(jobOrder.size() - 1).setTotal(String.valueOf(Double.parseDouble(jobOrder.get(jobOrder.size() - 1).getTotal()) + Double.parseDouble(df.format(total))));
+//            exitJobOrderRepository.save(jobOrder.get(jobOrder.size() - 1));
+//
+//        }
+//        return checkLimitResponse;
+//    }
+
     public void deleteJobOrder(Long id) {
         try {
-            double total;
             DecimalFormat df = new DecimalFormat("#,##0.000");
 
-            ExitJobOrder jobOrder = exitJobOrderRepository.getById(id);
+            ExitJobOrder jobOrder = exitJobOrderRepository.getReferenceById(id);
 //            PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository.findAllByJobOrderIdAndPandCode(jobOrder.getJobOrderId(), jobOrder.getPandCode(), jobOrder.getHeight(), jobOrder.getWidth());
-            PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository.findByUniqueIdAndJobOrderIdAndWidthAndHeight(jobOrder.getUniqueId(), jobOrder.getJobOrderId(),jobOrder.getWidth(), jobOrder.getHeight());
+            Optional<PandsToJobOrder> pandsToJobOrder = pandsToJobOrderRepository.findByUniqueIdAndJobOrderIdAndWidthAndHeight(jobOrder.getUniqueId(), jobOrder.getJobOrderId(),jobOrder.getWidth(), jobOrder.getHeight());
 
-            pandsToJobOrder.setQuantity(pandsToJobOrder.getQuantity() + jobOrder.getQuantity());
+            pandsToJobOrder.get().setQuantity(pandsToJobOrder.get().getQuantity() + jobOrder.getQuantity());
             NumberFormat format = NumberFormat.getNumberInstance(Locale.US);
-            Number number = format.parse(pandsToJobOrder.getTotal());
+            Number number = format.parse(pandsToJobOrder.get().getTotal());
             double value = number.doubleValue();
-            double result = value + Double.valueOf(jobOrder.getTotal());
-            pandsToJobOrder.setTotal(df.format(result));
+            double result = value + Double.parseDouble(jobOrder.getTotal());
+            pandsToJobOrder.get().setTotal(df.format(result));
 
             exitJobOrderRepository.delete(jobOrder);
         } catch (Exception e) {
@@ -268,13 +402,13 @@ public class ExitJobOrderService {
             double total;
             DecimalFormat df = new DecimalFormat("#.###");
 
-            List<ExitJobOrder> jobOrder = exitJobOrderRepository.getBySerial(serialNumber);
+            List<ExitJobOrder> jobOrder = exitJobOrderRepository.findBySerialNumber(serialNumber);
             for (int i = 0; i < jobOrder.size(); i++) {
 //                PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository.findAllByJobOrderIdAndPandCode(jobOrder.getJobOrderId(), jobOrder.getPandCode(), jobOrder.getHeight(), jobOrder.getWidth());
-                PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository.findByUniqueIdAndJobOrderIdAndWidthAndHeight(jobOrder.get(i).getUniqueId(), jobOrder.get(i).getJobOrderId(),jobOrder.get(i).getWidth(),jobOrder.get(i).getHeight());
+                Optional<PandsToJobOrder> pandsToJobOrder = pandsToJobOrderRepository.findByUniqueIdAndJobOrderIdAndWidthAndHeight(jobOrder.get(i).getUniqueId(), jobOrder.get(i).getJobOrderId(),jobOrder.get(i).getWidth(),jobOrder.get(i).getHeight());
 
-                pandsToJobOrder.setQuantity(pandsToJobOrder.getQuantity() + jobOrder.get(i).getQuantity());
-                pandsToJobOrder.setTotal(df.format(Double.valueOf(pandsToJobOrder.getTotal()) + Double.valueOf(jobOrder.get(i).getTotal())));
+                pandsToJobOrder.get().setQuantity(pandsToJobOrder.get().getQuantity() + jobOrder.get(i).getQuantity());
+                pandsToJobOrder.get().setTotal(df.format(Double.parseDouble(pandsToJobOrder.get().getTotal()) + Double.parseDouble(jobOrder.get(i).getTotal())));
 
                 exitJobOrderRepository.delete(jobOrder.get(i));
             }
@@ -476,17 +610,17 @@ public class ExitJobOrderService {
 
     public ResponseEntity<ExitJobOrder> updateChildPand(ExitJobOrder updatedJobOrder) {
         try {
-            List<ExitJobOrder> jobOrder = exitJobOrderRepository.getByUniqueId(updatedJobOrder.getUniqueId());
+            Optional<ExitJobOrder> jobOrder = exitJobOrderRepository.findByUniqueId(updatedJobOrder.getUniqueId());
 
             double total;
             DecimalFormat df = new DecimalFormat("#.###");
 
             if (updatedJobOrder.getUnit().equals("Square Meter")) {
-                total = (Double.valueOf(updatedJobOrder.getHeight()) * Double.valueOf(updatedJobOrder.getWidth()) * Double.valueOf(updatedJobOrder.getQuantity())) / 10000;
+                total = (Double.parseDouble(updatedJobOrder.getHeight()) * Double.parseDouble(updatedJobOrder.getWidth()) * Double.parseDouble(String.valueOf(updatedJobOrder.getQuantity()))) / 10000;
             } else if (updatedJobOrder.getUnit().equals("Longitudinal meter")) {
-                total = (Double.valueOf(updatedJobOrder.getHeight()) * Double.valueOf(updatedJobOrder.getQuantity())) / 100;
+                total = (Double.parseDouble(updatedJobOrder.getHeight()) * Double.parseDouble(String.valueOf(updatedJobOrder.getQuantity()))) / 100;
             } else {
-                total = Double.valueOf(updatedJobOrder.getQuantity());
+                total = Double.parseDouble(String.valueOf(updatedJobOrder.getQuantity()));
             }
 
 //        jobOrder.setJobOrderId(updatedJobOrder.getJobOrderId());
@@ -503,25 +637,25 @@ public class ExitJobOrderService {
 //        jobOrder.setRawType(updatedJobOrder.getRawType());
 //        jobOrder.setRawUsed(updatedJobOrder.getRawUsed());
 //        jobOrder.setFinishType(updatedJobOrder.getFinishType());
-            jobOrder.get(0).setThickness(updatedJobOrder.getThickness());
+            jobOrder.get().setThickness(updatedJobOrder.getThickness());
 //        jobOrder.setBlockNumber(updatedJobOrder.getBlockNumber());
 //        jobOrder.setFloor(updatedJobOrder.getFloor());
 //        jobOrder.setOfficerName(updatedJobOrder.getOfficerName());
-            jobOrder.get(0).setHeight(updatedJobOrder.getHeight());
-            jobOrder.get(0).setWidth(updatedJobOrder.getWidth());
-            jobOrder.get(0).setRepetition(updatedJobOrder.getRepetition());
-            jobOrder.get(0).setQuantityUsedRaws(updatedJobOrder.getQuantityUsedRaws());
-            jobOrder.get(0).setTotal(df.format(total));
-            jobOrder.get(0).setUnit(updatedJobOrder.getUnit());
-            jobOrder.get(0).setQuantity(updatedJobOrder.getQuantity());
-            jobOrder.get(0).setQuantityDelivered(updatedJobOrder.getQuantityDelivered());
+            jobOrder.get().setHeight(updatedJobOrder.getHeight());
+            jobOrder.get().setWidth(updatedJobOrder.getWidth());
+            jobOrder.get().setRepetition(updatedJobOrder.getRepetition());
+            jobOrder.get().setQuantityUsedRaws(updatedJobOrder.getQuantityUsedRaws());
+            jobOrder.get().setTotal(df.format(total));
+            jobOrder.get().setUnit(updatedJobOrder.getUnit());
+            jobOrder.get().setQuantity(updatedJobOrder.getQuantity());
+            jobOrder.get().setQuantityDelivered(updatedJobOrder.getQuantityDelivered());
 
 
 //        jobOrder.setAdditionalDescription(updatedJobOrder.getAdditionalDescription());
 
-            exitJobOrderRepository.save(jobOrder.get(0));
+            exitJobOrderRepository.save(jobOrder.get());
 
-            return new ResponseEntity<>(jobOrder.get(0), HttpStatus.OK);
+            return new ResponseEntity<>(jobOrder.get(), HttpStatus.OK);
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
@@ -530,24 +664,24 @@ public class ExitJobOrderService {
 
     }
 
-    public ResponseEntity<List<ExitJobOrder>> getAllExitJobOrdersBySerial(String jobOrderid) {
-        List<ExitJobOrder> exitJobOrders = exitJobOrderRepository.getByJobOrderIdAndSerial(jobOrderid);
+    public ResponseEntity<List<String>> getAllExitJobOrdersBySerial(String jobOrderid) {
+        List<String> exitJobOrders = exitJobOrderRepository.findDistinctSerialNumbersByJobOrderId(jobOrderid);
         return new ResponseEntity<>(exitJobOrders, HttpStatus.OK);
     }
 
     public ResponseEntity<List<ExitJobOrder>> getAllExitJobOrdersBySpacificSerial(String serialNumber) {
-        List<ExitJobOrder> exitJobOrders = exitJobOrderRepository.getBySerial(serialNumber);
+        List<ExitJobOrder> exitJobOrders = exitJobOrderRepository.findBySerialNumber(serialNumber);
         return new ResponseEntity<>(exitJobOrders, HttpStatus.OK);
     }
 
-    public ResponseEntity<List<ExitJobOrder>> getAllExitJobOrdersByProject(Long id) {
-        List<ExitJobOrder> exitJobOrders = exitJobOrderRepository.getByProjectId(id);
+    public ResponseEntity<List<String>> getAllExitJobOrdersByProject(Long id) {
+        List<String> exitJobOrders = exitJobOrderRepository.findDistinctSerialNumbersByProjectProfileId(id);
         return new ResponseEntity<>(exitJobOrders, HttpStatus.OK);
     }
 
     public List<ExitJobOrder> getReturnsById(Long jobOrderNumber) {
         JobOrder jobOrder = jobOrderService.getJobOrderById(jobOrderNumber);
-        return exitJobOrderRepository.getReturnsById(jobOrder.getJobOrderNumber());
+        return exitJobOrderRepository.findReturnedByJobOrderId(jobOrder.getJobOrderNumber());
 
     }
 }

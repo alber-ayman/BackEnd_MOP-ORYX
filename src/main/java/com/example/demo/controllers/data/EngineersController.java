@@ -2,6 +2,7 @@ package com.example.demo.controllers.data;
 
 import com.example.demo.models.Engineers;
 import com.example.demo.service.data.EngineersService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -49,7 +50,7 @@ public class EngineersController {
     @PostMapping("/save")  // Creating New JobOrders
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Engineers> saveJobOrders(
-            @RequestBody Engineers engineers) throws SQLException {
+           @Valid @RequestBody Engineers engineers) throws SQLException {
         try {
             return engineersService.addNewEngineer(engineers);
         } catch (Exception e) {

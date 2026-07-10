@@ -1,23 +1,13 @@
 package com.example.demo.service;
 
-//import com.itextpdf.io.image.ImageDataFactory;
-//import com.itextpdf.layout.element.Image;
-//import com.itextpdf.layout.element.Table;
-
 import com.example.demo.models.*;
 import com.example.demo.repository.ExitProcessJobOrderRepository;
-//import com.itextpdf.kernel.pdf.PdfDocument;
-//import com.itextpdf.kernel.pdf.PdfWriter;
-//import com.itextpdf.layout.Document;
-//import com.itextpdf.layout.element.Paragraph;
-//import com.itextpdf.layout.property.UnitValue;
 import com.example.demo.service.workOrder.JobOrderService;
 import com.example.demo.service.workOrder.PandsToJobOrderService;
 import com.itextpdf.text.Document;
 import com.itextpdf.text.pdf.PdfWriter;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-//import org.apache.poi.wp.usermodel.Paragraph;
 import org.apache.poi.xssf.usermodel.XSSFPrintSetup;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class FileService {
@@ -235,7 +226,7 @@ public class FileService {
 
             int rowIdx = 6;
 
-            List<String> jobOrdersByRawType = exitProcessJobOrderRepository.jobOrdersByRawType
+            List<String> jobOrdersByRawType = exitProcessJobOrderRepository.findDistinctUnitsByProjectCodeAndJobOrderId
                     (jobOrderParent.getPandsToJobOrderList().get(0).getProjectCode()
                             , jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId());
 
@@ -245,8 +236,9 @@ public class FileService {
             String addDisc = "";
 
             for (int i = 0; i < jobOrdersByRawType.size(); i++) {
-                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.jobOrdersByUnit(jobOrderParent.getPandsToJobOrderList().get(0).getProjectCode()
-                        , jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId()
+                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.findByProjectCodeAndJobOrderIdAndUnit(
+                        jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+                        , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId()
                         , jobOrdersByRawType.get(i)));
             }
             int m = 1;
@@ -393,15 +385,11 @@ public class FileService {
                     System.out.println(unit);
                 }
 
-                PandsToJobOrder pandsToJobOrder = pandsToJobOrderService.getByjobOrderAndPandId(jobOrdersByThickness.get(i).getJobOrderId(), jobOrdersByThickness.get(i).getPandCode());
-                System.out.println("7777777777 " + result);
-                System.out.println("9999999999999999" + Double.valueOf(pandsToJobOrder.getTotal()));
-                System.out.println("00000000000" + Double.valueOf(formattedNumber));
-                pandsToJobOrder.setTotal(String.valueOf(Double.valueOf(pandsToJobOrder.getTotal()) - Double.valueOf(formattedNumber)));
-                System.out.println("888888888888888888");
+                Optional<PandsToJobOrder> pandsToJobOrder = pandsToJobOrderService.getByJobOrderAndBandId(jobOrdersByThickness.get(i).getJobOrderId(), jobOrdersByThickness.get(i).getPandCode());
+                pandsToJobOrder.get().setTotal(String.valueOf(Double.parseDouble(pandsToJobOrder.get().getTotal()) - Double.parseDouble(formattedNumber)));
 
-                double result2 = pandsToJobOrder.getQuantity() - (jobOrdersByThickness.get(i).getQuantity());
-                pandsToJobOrder.setQuantity(result2);
+                double result2 = pandsToJobOrder.get().getQuantity() - (jobOrdersByThickness.get(i).getQuantity());
+                pandsToJobOrder.get().setQuantity(result2);
 
                 Cell cell77 = row.createCell(17);
                 cell77.setCellValue(unit);
@@ -433,36 +421,17 @@ public class FileService {
             sheet.autoSizeColumn(13);
             sheet.autoSizeColumn(14);
 
-            System.err.println("rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr");
             ByteArrayOutputStream fileOut = new ByteArrayOutputStream();
-//            workbook = createCorePay(workbook);
 
             workbook.write(fileOut);
             workbook.close();
 
             exitProcessJobOrderRepository.deleteAll();
-            System.err.println("zzzzzzzzzzzzzzzzzz");
 
             ByteArrayOutputStream pdfOutputStream = new ByteArrayOutputStream();
-//            workbook.save(pdfOutputStream, SaveFormat.PDF);
 
-//            PdfDocument pdfDocument = new PdfDocument(pdfWriter);
             Document document = new Document();
-//            PdfWriter pdfWriter = new PdfWriter(document, pdfOutputStream);
             PdfWriter.getInstance(document, pdfOutputStream);
-//                Iterator<Row> rowIterator = sheet.iterator();
-//                while (rowIterator.hasNext()) {
-//                    Row currentRow = rowIterator.next();
-//                    Iterator<Cell> cellIterator = currentRow.cellIterator();
-//                    while (cellIterator.hasNext()) {
-//                        Cell currentCell = cellIterator.next();
-//                        document.add(new Paragraph(currentCell.toString()));
-//                    }
-//                }
-
-
-            // Add a Table with 3 columns
-
 
             // Close the document
             document.close();
@@ -471,23 +440,19 @@ public class FileService {
             ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(pdfOutputStream.toByteArray());
             InputStreamResource resource = new InputStreamResource(pdfInputStream);
 
-//            byte[] pdfBytes = pdfOutputStream.toByteArray();
 
             return resource;
 
         } catch (Exception e) {
 
-            System.err.println("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-            System.out.println("cath");
             e.printStackTrace();
         }
         return null;
     }
 
     private List<PandsToJobOrder> getByJobOrder(String jobOrderId) {
-        List<PandsToJobOrder> jobOrders = pandsToJobOrderService.getByJobOrderId(jobOrderId);
 
-        return jobOrders;
+        return pandsToJobOrderService.getByJobOrderId(jobOrderId);
     }
 
     public InputStreamResource getLastJobOrder(JobOrderParent jobOrderParent) {

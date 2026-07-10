@@ -1,6 +1,7 @@
 package com.example.demo.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
@@ -21,5 +22,6 @@ public class Engineers {
     @Column(name = "ID")
     private Long id;
 
+    @NotBlank
     private String engineerName;
 }

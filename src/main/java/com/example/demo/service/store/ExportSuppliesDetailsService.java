@@ -172,8 +172,7 @@ public class ExportSuppliesDetailsService {
 
     public List<String> workOrderByProjectId(String id) {
         try{
-            List<String> workOrders = exportSuppliesDetailsRepository.getWorkOrderByProjectCode(id);
-            return workOrders;
+            return exportSuppliesDetailsRepository.getWorkOrderByProjectCode(id);
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);

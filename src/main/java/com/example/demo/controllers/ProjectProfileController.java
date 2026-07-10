@@ -1,13 +1,12 @@
 package com.example.demo.controllers;
 
+import com.example.demo.controllers.workOrder.pandsToJobOrderController;
 import com.example.demo.models.ProjectProfile;
-import com.example.demo.repository.ProjectProfileRepository;
 import com.example.demo.service.ProjectProfileService;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,21 +20,22 @@ import java.util.List;
 //@CrossOrigin(origins = "http://192.168.1.249:4200")
 @CrossOrigin(origins = "*")
 @RequestMapping("/api/projectprofile")
+@Slf4j
 public class ProjectProfileController {
 
-    @Autowired
-    ProjectProfileService projectProfileRepository;
+    private static final Logger logger = LoggerFactory.getLogger(ProjectProfileController.class);
+
 
     @Autowired
-    ProjectProfileRepository profileRepository;
+    ProjectProfileService projectProfileService;
 
     @GetMapping("/all")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
     public ResponseEntity<List<ProjectProfile>> getAllProjectsProfile() throws SQLException {
         try {
-            return projectProfileRepository.getAllProjectProfiles();
+            return projectProfileService.getAllProjectProfiles();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request getAllProjectsProfile", e);
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -44,11 +44,20 @@ public class ProjectProfileController {
     @PreAuthorize("hasRole('USER') or hasRole('Viewer') or hasRole('ADMIN')")
     public ResponseEntity<ProjectProfile> getProjectById(@PathVariable("id") Long id) throws ResourceNotFoundException, SQLException {
         try {
-            ProjectProfile projectProfile = projectProfileRepository.getProjectProfileById(id);
-            System.out.println("projectProfile: " + projectProfile.toString());
+            ProjectProfile projectProfile = projectProfileService.getProjectProfileById(id);
             return new ResponseEntity<>(projectProfile, HttpStatus.OK);
         } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
+    @GetMapping("/allByName")
+    @PreAuthorize("hasRole('USER') or hasRole('Viewer') or hasRole('ADMIN')")
+    public ResponseEntity<ProjectProfile> getProjectByName(@RequestParam("name") String name) throws ResourceNotFoundException, SQLException {
+        try {
+            ProjectProfile projectProfile = projectProfileService.getProjectProfileByName(name);
+            return new ResponseEntity<>(projectProfile, HttpStatus.OK);
+        } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -60,8 +69,9 @@ public class ProjectProfileController {
         try {
             projectProfile.setSerial(1);
             projectProfile.setJobOrderSerial(1);
-            return projectProfileRepository.addProjectProfile(projectProfile);
+            return projectProfileService.addProjectProfile(projectProfile);
         } catch (Exception e) {
+            logger.error("Error while processing request saveProject", e);
             return new ResponseEntity<>(projectProfile, HttpStatus.BAD_REQUEST);
         }
     }
@@ -70,7 +80,7 @@ public class ProjectProfileController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ProjectProfile> updateMerchant(@PathVariable(value = "id") Long id, @RequestBody ProjectProfile updatedProject) throws ResourceNotFoundException, SQLException {
         try {
-            return projectProfileRepository.updateProjectProfile(id,updatedProject);
+            return projectProfileService.updateProjectProfile(id,updatedProject);
         } catch (Exception e) {
             return new ResponseEntity<>(updatedProject, HttpStatus.BAD_REQUEST);
         }
@@ -80,7 +90,7 @@ public class ProjectProfileController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> deleteMerchant(@PathVariable(value = "id") Long id) throws ResourceNotFoundException, SQLException {
         try {
-            return projectProfileRepository.deleteProjectProfile(id);
+            return projectProfileService.deleteProjectProfile(id);
         } catch (Exception e) {
             return new ResponseEntity<>(null, HttpStatus.BAD_REQUEST);
         }

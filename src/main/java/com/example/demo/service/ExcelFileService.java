@@ -62,7 +62,7 @@ public class ExcelFileService {
             cellStyleWithColor.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
             cellStyleWithColor.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.getByJobOrderId(id);
+            List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.findByJobOrderId(id);
             JobOrder jobOrder = jobOrderRepository.getByJobOrderNumber(id);
 
             Cell cell2 = firstRow.createCell(0);
@@ -216,17 +216,17 @@ public class ExcelFileService {
 
             int rowIdx = 7;
 
-            List<String> units = pandsToJobOrderRepository.getAllUnits(id);
+            List<String> units = pandsToJobOrderRepository.findDistinctUnitsByJobOrderId(id);
 
             int count = 1;
-            for (int k = 0; k < units.size(); k++) {
+            for (String s : units) {
 
-                List<PandsToJobOrder> pands = pandsToJobOrderRepository.getPandByProjectIdGroupByUnit(units.get(k), id);
-                Double result = 0.0;
+                List<PandsToJobOrder> pands = pandsToJobOrderRepository.findByUnitAndJobOrderId(s, id);
+                double result = 0.0;
 
-                Double quantityTotal = 0.0;
+                double quantityTotal = 0.0;
 
-                for (int i = 0; i < pands.size(); i++) {
+                for (PandsToJobOrder pand : pands) {
 
                     Row row = sheet.createRow(rowIdx);
                     Cell cellRawType = row.createCell(0);
@@ -234,77 +234,77 @@ public class ExcelFileService {
                     cellRawType.setCellStyle(cellStyle);
 
                     Cell pandCode = row.createCell(1);
-                    pandCode.setCellValue(pands.get(i).getPandCode());
+                    pandCode.setCellValue(pand.getPandCode());
                     pandCode.setCellStyle(cellStyle);
 
                     Cell additionalDescription = row.createCell(2);
-                    additionalDescription.setCellValue(pands.get(i).getAdditionalDescription());
+                    additionalDescription.setCellValue(pand.getAdditionalDescription());
                     additionalDescription.setCellStyle(cellStyle);
 
                     Cell desc = row.createCell(3);
-                    desc.setCellValue(pands.get(i).getDescription());
+                    desc.setCellValue(pand.getDescription());
                     desc.setCellStyle(cellStyle);
 
                     Cell manufacturing = row.createCell(4);
-                    manufacturing.setCellValue(pands.get(i).getManufacturing());
+                    manufacturing.setCellValue(pand.getManufacturing());
                     manufacturing.setCellStyle(cellStyle);
 
 
                     Cell manufacturingCode = row.createCell(5);
-                    manufacturingCode.setCellValue(pands.get(i).getManufacturingCode());
+                    manufacturingCode.setCellValue(pand.getManufacturingCode());
                     manufacturingCode.setCellStyle(cellStyle);
 
 
                     Cell unit = row.createCell(6);
-                    unit.setCellValue(pands.get(i).getUnit());
+                    unit.setCellValue(pand.getUnit());
                     unit.setCellStyle(cellStyle);
 
                     Cell rawType = row.createCell(7);
-                    rawType.setCellValue(pands.get(i).getRawType());
+                    rawType.setCellValue(pand.getRawType());
                     rawType.setCellStyle(cellStyle);
 
                     Cell finishType = row.createCell(8);
-                    finishType.setCellValue(pands.get(i).getFinishType());
+                    finishType.setCellValue(pand.getFinishType());
                     finishType.setCellStyle(cellStyle);
 
                     Cell quantity = row.createCell(9);
-                    quantity.setCellValue(pands.get(i).getMainQuantity());
+                    quantity.setCellValue(pand.getMainQuantity());
                     quantity.setCellStyle(cellStyle);
 
 
                     Cell height = row.createCell(10);
-                    height.setCellValue(pands.get(i).getHeight());
+                    height.setCellValue(pand.getHeight());
                     height.setCellStyle(cellStyle);
 
                     Cell width = row.createCell(11);
-                    width.setCellValue(pands.get(i).getWidth());
+                    width.setCellValue(pand.getWidth());
                     width.setCellStyle(cellStyle);
 
                     Cell thickness = row.createCell(12);
-                    thickness.setCellValue(pands.get(i).getThickness());
+                    thickness.setCellValue(pand.getThickness());
                     thickness.setCellStyle(cellStyle);
 
                     Cell repetition = row.createCell(13);
-                    repetition.setCellValue(pands.get(i).getRepetition());
+                    repetition.setCellValue(pand.getRepetition());
                     repetition.setCellStyle(cellStyle);
 
                     Cell mainTotal = row.createCell(14);
-                    mainTotal.setCellValue(pands.get(i).getMainTotal());
+                    mainTotal.setCellValue(pand.getMainTotal());
                     mainTotal.setCellStyle(cellStyle);
 
                     Cell total = row.createCell(15);
-                    total.setCellValue(pands.get(i).getTotal());
+                    total.setCellValue(pand.getTotal());
                     total.setCellStyle(cellStyle);
 
                     Cell quantityInPand = row.createCell(16);
-                    quantityInPand.setCellValue(pands.get(i).getQuantityInPand());
+                    quantityInPand.setCellValue(pand.getQuantityInPand());
                     quantityInPand.setCellStyle(cellStyle);
 
                     rowIdx++;
 
-                    result += pands.get(i).getMainQuantity();
+                    result += pand.getMainQuantity();
 
-                    quantityTotal += Double.valueOf(pands.get(i).getMainTotal());
+                    quantityTotal += Double.valueOf(pand.getMainTotal());
 
                     count++;
 
@@ -321,7 +321,7 @@ public class ExcelFileService {
                 finalTotal.setCellValue(quantityTotal);
                 finalTotal.setCellStyle(cellStyleWithColor);
 
-                rowIdx+=2;
+                rowIdx += 2;
             }
 
 
@@ -378,8 +378,8 @@ public class ExcelFileService {
             cellStyleWithColor.setFillForegroundColor(IndexedColors.YELLOW.getIndex());
             cellStyleWithColor.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            List<ExitJobOrder> allExitJobOrder = exitJobOrderRepository.getBySerial(serial);
-            JobOrder jobOrder = jobOrderRepository.getByJobOrderNumber(allExitJobOrder.get(0).getJobOrderId());
+            List<ExitJobOrder> allExitJobOrder = exitJobOrderRepository.findBySerialNumber(serial);
+            JobOrder jobOrder = jobOrderRepository.getByJobOrderNumber(allExitJobOrder.getFirst().getJobOrderId());
 
             Cell cell2 = firstRow.createCell(0);
             cell2.setCellValue("عرض فنى");
@@ -421,7 +421,7 @@ public class ExcelFileService {
             floor.setCellStyle(cellStyle);
 
             Cell floorNum = secondRow.createCell(4);
-            floorNum.setCellValue(allExitJobOrder.get(0).getInstallationArea());
+            floorNum.setCellValue(allExitJobOrder.getFirst().getInstallationArea());
             floorNum.setCellStyle(cellStyle);
 
 
@@ -509,7 +509,7 @@ public class ExcelFileService {
 
             int rowIdx = 7;
 
-            List<String> jobOrdersByRawType = exitJobOrderRepository.jobOrdersByRawType
+            List<String> jobOrdersByRawType = exitJobOrderRepository.findDistinctPandCodes
                     (allExitJobOrder.get(0).getProjectCode()
                             , allExitJobOrder.get(0).getJobOrderId()
                             , serial);
@@ -522,7 +522,7 @@ public class ExcelFileService {
 
             for (int k = 0; k < jobOrdersByRawType.size(); k++) {
 
-                jobOrdersByThickness.addAll(exitJobOrderRepository.jobOrdersByUnit(allExitJobOrder.get(0).getProjectCode()
+                jobOrdersByThickness.addAll(exitJobOrderRepository.findByUnit(allExitJobOrder.getFirst().getProjectCode()
                         , allExitJobOrder.get(0).getJobOrderId()
                         , jobOrdersByRawType.get(k)
                         , serial));

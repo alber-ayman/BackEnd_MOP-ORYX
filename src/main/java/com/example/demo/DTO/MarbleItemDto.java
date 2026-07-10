@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class MarbleItemDto {
+
     private String thickness;
     private String height;
     private String width;
@@ -13,16 +14,8 @@ public class MarbleItemDto {
     private String rawType;
     private String rawUsed;
     private String pandCode;
-    private String jobOrderTybe;
-    private String manufacturingCode;
-    private String installationArea;
-    private String engineerName;
-    private String desc;
-    private String floor;
-    private String block;
     private String description;
-    private Long projectProfileId;
-    private String projectCode;
+    private String additionalDescription;
     private double total;
 
 }

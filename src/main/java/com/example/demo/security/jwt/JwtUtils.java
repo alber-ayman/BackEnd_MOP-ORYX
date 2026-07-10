@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.Map;
 import org.springframework.security.core.GrantedAuthority;
 
+import javax.crypto.SecretKey;
+
 @Component
 public class JwtUtils {
 
@@ -32,6 +34,8 @@ public class JwtUtils {
 
     public String userName;
 
+//    SecretKey key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
+
     public String generateJwtToken(Authentication authentication) {
 
         UserDetailsImpl userPrincipal = (UserDetailsImpl) authentication.getPrincipal();
@@ -44,10 +48,11 @@ public class JwtUtils {
 
         return Jwts.builder()
                 .setSubject((userPrincipal.getUsername()))
+                .signWith(SignatureAlgorithm.HS256,key())
                 .setHeaderParams(map)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date((new Date()).getTime() + jwtExpirationMs))
-//                .signWith(SignatureAlgorithm.HS512, jwtSecret)
+//              .signWith(SignatureAlgorithm.HS512, jwtSecret)
                 .compact();
     }
 
@@ -61,7 +66,7 @@ public class JwtUtils {
 
     public boolean validateJwtToken(String authToken) {
         try {
-            Jwts.parser().setSigningKey(jwtSecret).parseClaimsJws(authToken);
+            Jwts.parser().setSigningKey(key()).parseClaimsJws(authToken);
             return true;
         } catch (MalformedJwtException e) {
             logger.error("Invalid JWT token: {}", e.getMessage());

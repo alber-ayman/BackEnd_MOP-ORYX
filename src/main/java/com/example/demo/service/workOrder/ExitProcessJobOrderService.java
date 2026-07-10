@@ -42,7 +42,7 @@ public class ExitProcessJobOrderService {
                     total = exitJobOrders.getPandsToJobOrderList().get(i).getQuantity();
                 }
 
-                exitJobOrder.setSerialNumber(exitJobOrderRepository.getLastSerialNumber());
+                exitJobOrder.setSerialNumber(exitJobOrderRepository.findLastSerialNumber());
                 exitJobOrder.setTotal(String.valueOf(total));
                 exitJobOrder.setUnifiedSerial(unifiedSerial);
                 System.out.println("unifiedSerial: " + unifiedSerial);

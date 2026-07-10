@@ -1,103 +1,400 @@
 package com.example.demo.repository;
 
+import com.example.demo.DTO.ThicknessUnitDTO;
 import com.example.demo.models.PandsToJobOrder;
-import com.example.demo.models.SupplyDetails;
 import com.example.demo.payload.RawTypeDTO;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.query.Procedure;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
+@Repository
 public interface PandsToJobOrderRepository extends JpaRepository<PandsToJobOrder, Long> {
-    List<PandsToJobOrder> getByJobOrderId(String id);
-    @Query(value = "SELECT unit FROM Pands_To_Job_Order where job_order_id = :job_order_id GROUP BY unit", nativeQuery = true)
-    List<String> getAllUnits(@Param("job_order_id") String jobOrderCode);
 
-    @Query(value = "SELECT * FROM Pands_To_Job_Order where unit = :unit and job_order_id = :job_order_id ", nativeQuery = true)
-    List<PandsToJobOrder> getPandByProjectIdGroupByUnit(@Param("unit") String unit, @Param("job_order_id") String jobOrderCode);
+    /*
+     |--------------------------------------------------------------------------
+     | BASIC FINDERS
+     |--------------------------------------------------------------------------
+     */
 
-    @Query(value = "SELECT job_order_id FROM Pands_To_Job_Order where project_profile_id = :projectCode GROUP BY job_order_id ", nativeQuery = true)
-    List<String> jobOrdersId(@Param("projectCode") Long projectCode);
+    List<PandsToJobOrder> findByJobOrderId(String jobOrderId);
 
-    @Query(value = "SELECT * FROM Pands_To_Job_Order where project_profile_id = :projectCode and job_order_id = :job_order_id ", nativeQuery = true)
-    List<PandsToJobOrder> jobOrdersByJobOrderId(@Param("projectCode") Long projectCode, @Param("job_order_id") String jobOrderCode);
+    List<PandsToJobOrder> findByProjectProfileId(Long projectProfileId);
 
-    @Query(value = "SELECT * FROM Pands_To_Job_Order where project_profile_id = :projectCode and pand_code = :pand_code ", nativeQuery = true)
-    List<PandsToJobOrder> jobOrdersByPandCode(@Param("projectCode") Long projectCode, @Param("pand_code") String pandCode);
+    List<PandsToJobOrder> findByPandCodeAndProjectCode(String pandCode, String projectCode);
 
-    List<PandsToJobOrder> getByProjectProfileId(Long id);
+    Optional<PandsToJobOrder> findByUniqueId(String uniqueId);
 
-    @Query(value = "select sum(main_total) from pands_to_job_order where project_profile_id = :projectCode and pand_code = :pandCode", nativeQuery = true)
-    Double getSumByPandCode(@Param("projectCode") Long projectCode, @Param("pandCode") String pandCode);
+    Optional<PandsToJobOrder> findByJobOrderIdAndPandCode(
+            String jobOrderId,
+            String pandCode
+    );
 
-    @Query(value = "select sum(main_quantity) from pands_to_job_order where project_profile_id = :projectCode and job_order_id = :job_order_id and raw_type = :raw_type", nativeQuery = true)
-    Double sumQuantityByRaw(@Param("projectCode") Long projectCode, @Param("job_order_id") String pandCode, @Param("raw_type") String rawType);
+    Optional<PandsToJobOrder> findByUniqueIdAndJobOrderIdAndWidthAndHeight(
+            String uniqueId,
+            String jobOrderId,
+            String width,
+            String height
+    );
 
-    @Query(value = "SELECT * FROM pands_to_job_order where project_profile_id = :projectCode and job_order_id = :job_order_id  group by raw_type", nativeQuery = true)
-    List<PandsToJobOrder> getByJobOrderIdGroupByRawType(@Param("projectCode") Long projectCode, @Param("job_order_id") String jobOrderCode);
+    /*
+     |--------------------------------------------------------------------------
+     | UNITS
+     |--------------------------------------------------------------------------
+     */
 
-    @Query(value = "SELECT * FROM pands_to_job_order where job_order_id = :job_order_id  group by raw_type", nativeQuery = true)
-    List<PandsToJobOrder> allJobOrderIdGroupByRawType(@Param("job_order_id") String jobOrderCode);
-    @Query(value = "SELECT * FROM pands_to_job_order where project_profile_id = :projectCode and job_order_id = :job_order_id and raw_type = :raw_type", nativeQuery = true)
-    List<PandsToJobOrder> getByJobOrderIdAndRawType(@Param("projectCode") Long projectCode, @Param("job_order_id") String jobOrderCode, @Param("raw_type") String rawType);
+    @Query("""
+            SELECT DISTINCT p.unit
+            FROM PandsToJobOrder p
+            WHERE p.jobOrderId = :jobOrderId
+            ORDER BY p.unit
+            """)
+    List<String> findDistinctUnitsByJobOrderId(
+            @Param("jobOrderId") String jobOrderId
+    );
+
+    @Query("""
+            SELECT p
+            FROM PandsToJobOrder p
+            WHERE p.unit = :unit
+            AND p.jobOrderId = :jobOrderId
+            """)
+    List<PandsToJobOrder> findByUnitAndJobOrderId(
+            @Param("unit") String unit,
+            @Param("jobOrderId") String jobOrderId
+    );
+
+    /*
+     |--------------------------------------------------------------------------
+     | JOB ORDERS
+     |--------------------------------------------------------------------------
+     */
+
+    @Query("""
+            SELECT DISTINCT p.jobOrderId
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            """)
+    List<String> findDistinctJobOrdersByProjectProfileId(
+            @Param("projectProfileId") Long projectProfileId
+    );
+
+    @Query("""
+            SELECT p
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.jobOrderId = :jobOrderId
+            """)
+    List<PandsToJobOrder> findByProjectProfileIdAndJobOrderId(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId
+    );
+
+    @Query("""
+            SELECT DISTINCT p.pandCode
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.jobOrderId = :jobOrderId
+            """)
+    List<String> findDistinctPandCodesByProjectProfileIdAndJobOrderId(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId
+    );
+
+    /*
+     |--------------------------------------------------------------------------
+     | PANDS
+     |--------------------------------------------------------------------------
+     */
+
+    @Query("""
+            SELECT p
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.pandCode = :pandCode
+            """)
+    List<PandsToJobOrder> findByProjectProfileIdAndPandCode(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("pandCode") String pandCode
+    );
+
+    @Query("""
+            SELECT DISTINCT p.jobOrderId
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.pandCode = :pandCode
+            """)
+    List<String> findPandDetails(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("pandCode") String pandCode
+    );
+
+    /*
+     |--------------------------------------------------------------------------
+     | RAW TYPES
+     |--------------------------------------------------------------------------
+     */
 
 
-    @Query(value = "select sum(main_total) from pands_to_job_order where project_profile_id = :projectCode and pand_code = :pandCode and raw_type = :raw_type and thickness = :thickness", nativeQuery = true)
-    Double getSumByRawTypeAndThinckness(@Param("projectCode") Long projectCode, @Param("pandCode") String pandCode, @Param("raw_type") String rawType, @Param("thickness") String thickness);
+    @Query("""
+            SELECT DISTINCT p.rawType
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.jobOrderId = :jobOrderId
+            """)
+    List<String> findDistinctRawTypesByProjectAndJobOrder(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId
+    );
 
-    @Query(value = "select sum(main_total) from pands_to_job_order where project_profile_id = :projectCode and job_order_id = :job_order_id and raw_type = :raw_type", nativeQuery = true)
-    Double getSumByRawType(@Param("projectCode") Long projectCode, @Param("job_order_id") String pandCode, @Param("raw_type") String rawType);
+    @Query("""
+            SELECT p
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.jobOrderId = :jobOrderId
+            AND p.rawType = :rawType
+            """)
+    List<PandsToJobOrder> findByProjectProfileIdAndJobOrderIdAndRawType(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId,
+            @Param("rawType") String rawType
+    );
 
-    PandsToJobOrder findByJobOrderIdAndPandCode(String jobOrderid, String pandId);
+    @Query("""
+            SELECT DISTINCT p
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.jobOrderId = :jobOrderId
+            ORDER BY p.rawType
+            """)
+    List<PandsToJobOrder> findGroupedByRawType(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId
+    );
 
-    @Query(value = "select * from pands_to_job_order where job_order_id = :job_order_id and pand_code = :pandCode and height = :height and width = :width", nativeQuery = true)
-    PandsToJobOrder findAllByJobOrderIdAndPandCode(@Param("job_order_id") String jobOrderCode, @Param("pandCode") String pandCode,@Param("height") String height,@Param("width") String width);
-//    List<PandsToJobOrder> findByPandCode(String pandId);
+    @Query("""
+            SELECT DISTINCT p
+            FROM PandsToJobOrder p
+            WHERE p.jobOrderId = :jobOrderId
+            ORDER BY p.rawType
+            """)
+    List<PandsToJobOrder> allJobOrderIdGroupByRawType(
+            @Param("jobOrderId") String jobOrderId
+    );
 
-    List<PandsToJobOrder> findByPandCodeAndProjectCode(String pandId,String projectCode);
+    /*
+     |--------------------------------------------------------------------------
+     | THICKNESS
+     |--------------------------------------------------------------------------
+     */
 
-    @Query(value = "select sum(quantity) from pands_to_job_order where project_profile_id = :projectCode and raw_type = :rawType", nativeQuery = true)
-    Double getSumByRawType(@Param("projectCode") Long projectCode, @Param("rawType") String rawType);
+    @Query("""
+            SELECT DISTINCT p.thickness
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectCode
+            AND p.jobOrderId = :jobOrderId
+            AND p.rawType = :rawType
+            ORDER BY p.thickness ASC
+            """)
+    List<String> findDistinctThicknesses(
+            @Param("projectCode") Long projectCode,
+            @Param("jobOrderId") String jobOrderId,
+            @Param("rawType") String rawType
+    );
 
-    PandsToJobOrder getByUniqueId(String id);
+    @Query("""
+            SELECT p
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.jobOrderId = :jobOrderId
+            AND p.rawType = :rawType
+            AND p.thickness = :thickness
+            AND p.unit = :unit
+            """)
+    List<PandsToJobOrder> findByThicknessAndRawTypeAndUnit(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId,
+            @Param("rawType") String rawType,
+            @Param("thickness") String thickness,
+            @Param("unit") String unit
+    );
 
-    PandsToJobOrder findByUniqueIdAndJobOrderIdAndWidthAndHeight(String id,String jobOrderId,String width, String height);
+    @Query(value = """
+            SELECT DISTINCT
+                   thickness AS thickness,
+                   unit AS unit,
+                   raw_type As rawType
+            FROM pands_to_job_order
+            WHERE project_profile_id = :projectCode
+              AND job_order_id = :jobOrderId
+              AND raw_type = :rawType
+            ORDER BY thickness ASC
+            """, nativeQuery = true)
+    List<ThicknessUnitDTO> findDistinctThicknessAndUnit(
+            @Param("projectCode") Long projectCode,
+            @Param("jobOrderId") String jobOrderId,
+            @Param("rawType") String rawType
+    );
 
-    @Query(value = "SELECT * FROM pands_to_job_order where project_profile_id = :projectCode and job_order_id = :job_order_id and raw_type = :rawType group by thickness, unit order by thickness asc", nativeQuery = true)
-    List<PandsToJobOrder> getByThicknessAndRawType(@Param("projectCode") Long projectCode, @Param("job_order_id") String jobOrderCode, @Param("rawType") String rawType);
+    /*
+     |--------------------------------------------------------------------------
+     | SUMS & TOTALS
+     |--------------------------------------------------------------------------
+     */
 
-    @Query(value = "SELECT * FROM pands_to_job_order where project_profile_id = :projectCode and job_order_id = :job_order_id and raw_type = :rawType and thickness = :thickness and unit = :unit", nativeQuery = true)
-    List<PandsToJobOrder> getByThicknessAndRawTypeAndUnit(@Param("projectCode") Long projectCode, @Param("job_order_id") String jobOrderCode, @Param("rawType") String rawType,@Param("thickness") String thickness,@Param("unit") String unit);
+    @Query("""
+            SELECT COALESCE(SUM(p.mainTotal), 0)
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.pandCode = :pandCode
+            """)
+    Double sumMainTotalByPandCode(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("pandCode") String pandCode
+    );
 
-    @Query(value = "SELECT  distinct(job_order_id) FROM mop.pands_to_job_order where project_profile_id = :projectCode and pand_code = :pandCode" , nativeQuery = true)
-    List<String> getPandDetails(@Param("projectCode") Long projectCode, @Param("pandCode") String pandCode);
+    @Query("""
+            SELECT COALESCE(SUM(p.mainTotal), 0)
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.pandCode = :pandCode
+            AND p.rawType = :rawType
+            AND p.thickness = :thickness
+            """)
+    Double sumMainTotalByRawTypeAndThickness(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("pandCode") String pandCode,
+            @Param("rawType") String rawType,
+            @Param("thickness") String thickness
+    );
 
-    @Query(value = "select sum(main_total) from pands_to_job_order where project_profile_id = :projectCode and pand_code = :pandCode and job_order_id = :job_order_id ", nativeQuery = true)
-    Double getSumByPandCodeAndJobOrder(@Param("projectCode") Long projectCode, @Param("pandCode") String pandCode , @Param("job_order_id") String job_order_id);
+    @Query("""
+            SELECT COALESCE(SUM(p.mainTotal), 0)
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.jobOrderId = :jobOrderId
+            AND p.rawType = :rawType
+            """)
+    Double sumMainTotalByRawType(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId,
+            @Param("rawType") String rawType
+    );
 
-    @Query(value = "SELECT DISTINCT pand_code FROM mop.pands_to_job_order where project_profile_id = :projectCode and job_order_id = :job_order_id" , nativeQuery = true)
-    List<String> getJobOrderDetails(@Param("projectCode") Long projectCode, @Param("job_order_id") String jobOrderID);
+    @Query("""
+            SELECT COALESCE(SUM(p.mainQuantity), 0)
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.jobOrderId = :jobOrderId
+            AND p.rawType = :rawType
+            """)
+    Double sumMainQuantityByRawType(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId,
+            @Param("rawType") String rawType
+    );
 
+    @Query("""
+            SELECT COALESCE(SUM(p.quantity), 0)
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.rawType = :rawType
+            """)
+    Double sumQuantityByRawType(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("rawType") String rawType
+    );
+
+    @Query("""
+            SELECT COALESCE(SUM(p.mainTotal), 0)
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.pandCode = :pandCode
+            AND p.jobOrderId = :jobOrderId
+            """)
+    Double sumMainTotalByPandCodeAndJobOrder(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("pandCode") String pandCode,
+            @Param("jobOrderId") String jobOrderId
+    );
+
+    /*
+     |--------------------------------------------------------------------------
+     | REPORTS
+     |--------------------------------------------------------------------------
+     */
+
+    @Query(value = """
+            SELECT
+                raw_type AS rawType,
+                SUM(main_total) AS total
+            FROM pands_to_job_order
+            WHERE project_profile_id = :projectProfileId
+            AND job_order_id = :jobOrderId
+            GROUP BY raw_type
+            """, nativeQuery = true)
+    List<RawTypeDTO> getMaterialsByWorkOrder(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId
+    );
+
+    /*
+     |--------------------------------------------------------------------------
+     | DELETES
+     |--------------------------------------------------------------------------
+     */
 
     @Transactional
     @Modifying
-    @Query(value = "delete from job_order_pands_to_job_orders where pands_to_job_orders_id = :id ", nativeQuery = true)
-    void deleteFromMutuleTable(@Param("id") Long id);
+    @Query(value = """
+            DELETE FROM job_order_pands_to_job_orders
+            WHERE pands_to_job_orders_id = :id
+            """, nativeQuery = true)
+    void deleteRelationByPandsToJobOrderId(@Param("id") Long id);
 
+    void deleteByProjectProfileId(Long projectProfileId);
 
+    /*
+     |--------------------------------------------------------------------------
+     | PROCEDURES
+     |--------------------------------------------------------------------------
+     */
 
-    void deleteByProjectProfileId(Long id);
+    @Procedure(procedureName = "deducting_quantity_from_pands")
+    void deductingQuantityFromPands(
+            @Param("p_project_code") String projectCode,
+            @Param("p_job_order_id") String jobOrderId
+    );
 
-    @Query(value = "SELECT raw_type AS rawType, sum(main_total) AS total FROM pands_to_job_order where project_profile_id = :projectCode and job_order_id = :job_order_id group by raw_type" , nativeQuery = true)
-    List<RawTypeDTO> getMaterialsByWorkOrder(@Param("projectCode") Long projectCode, @Param("job_order_id") String orderNumber);
-
-    @Query(value = "SELECT distinct(raw_type) FROM pands_to_job_order where project_profile_id = :projectCode and job_order_id = :job_order_id", nativeQuery = true)
-    List<String> getMaterialsByProjectIdAndWorkOrder(@Param("projectCode") Long projectCode, @Param("job_order_id") String orderNumber);
-
+//    @Procedure(procedureName = "UpdatePandsToJobOrder")
+//    void updatePandsToJobOrder(
+//            Long p_id,
+//            String p_projectCode,
+//            String p_projectName,
+//            String p_engineerName,
+//            String p_jobOrderType,
+//            String p_manufacturingCode,
+//            String p_pandCode,
+//            String p_description,
+//            String p_manufacturing,
+//            String p_rawType,
+//            String p_rawUsed,
+//            String p_finishType,
+//            String p_thickness,
+//            String p_blockNumber,
+//            String p_floor,
+//            String p_unit,
+//            String p_additionalDescription,
+//            Double p_height,
+//            Double p_width,
+//            Double p_repetition,
+//            Double p_mainQuantity,
+//            String p_installationArea
+//    );
 }
-
-

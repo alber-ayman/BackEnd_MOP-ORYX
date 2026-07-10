@@ -8,8 +8,8 @@ import com.example.demo.payload.CheckLimitResponse;
 import com.example.demo.repository.*;
 
 import com.example.demo.service.ChangeHistoryLog;
-import com.example.demo.service.FileStorageService;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.InputStreamResource;
@@ -30,6 +30,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @Service
+@Transactional
 public class PandsService {
 
     @Autowired
@@ -42,12 +43,6 @@ public class PandsService {
 
     @Autowired
     ExitJobOrderRepository exitJobOrderRepository;
-
-    @Autowired
-    RawTypeRepository rawTypeRepository;
-
-    @Autowired
-    private FileStorageService storageService;
 
     @Autowired
     private ChangeHistoryLog changeHistoryLog;
@@ -67,63 +62,32 @@ public class PandsService {
     }
 
     public Pand getPandByPandCode(String pandCode, Long projectId) {
-        Pand pands = pandsRepository.findByPandCodeAndProjectProfileId(pandCode, projectId);
 
-        return pands;
+        return pandsRepository.findByPandCodeAndProjectProfileId(pandCode, projectId);
     }
 
     public Optional<Pand> getPandById(Long id) {
-        Optional<Pand> pands = pandsRepository.findById(id);
 
 //        String fileurl = storageService.getFileByPandId(id);
 //        pands.get().setFileDB(fileurl);
 
-        return pands;
+        return pandsRepository.findById(id);
     }
 
     public List<Pand> getPandByProjectId(Long id) {
-        List<Pand> pands = pandsRepository.findByProjectProfileId(id);
 
-        return pands;
+        return pandsRepository.findByProjectProfileId(id);
     }
 
     public ResponseEntity<Pand> addNewPand(
-            Pand pand, HttpServletRequest request) throws SQLException {
+            Pand pand, HttpServletRequest request) {
         try {
-//            double total;
-            DecimalFormat df = new DecimalFormat("#.###");
+
             ProjectProfile projectProfile = projectProfileRepository.getById(pand.getProjectProfileId());
 
-//            String height;
-//            String width;
-//            if (pand.getHeight() == null) {
-//                height = "1";
-//            } else {
-//                height = pand.getHeight();
-//            }
-//
-//            if (pand.getWidth() == null) {
-//                width = "1";
-//            } else {
-//                width = pand.getWidth();
-//            }
-
-
-//            NumberFormat format = NumberFormat.getInstance(Locale.US);  // Use the appropriate Locale
-
-
-//            if (pand.getUnit().equals("Square Meter")) {
-//                total = (Double.valueOf(height) * Double.valueOf(width) * Double.valueOf(pand.getMainQuantity())) / 10000;
-//            } else if (pand.getUnit().equals("Longitudinal meter")) {
-//                total = (Double.valueOf(height) * Double.valueOf(pand.getMainQuantity())) / 100;
-//            } else {
-//                total = Double.valueOf(pand.getMainQuantity());
-//            }
-//            Number number = format.parse(String.valueOf(total));
-//            double value = number.doubleValue();
-//            String formattedNumber = df.format(total);
-//            pand.setTotal(Double.valueOf(formattedNumber));
             pand.setProjectProfileId(projectProfile.getId());
+            pand.setProjectCode(projectProfile.getProjectCode());
+            pand.setProjectName(projectProfile.getProjectName());
             pand.setRestQuantity(pand.getMainQuantity()); // restQuantity
             pand.setTotalQuantity(pand.getMainQuantity());
             pand.setMockQuantity(pand.getMainQuantity());
@@ -136,7 +100,7 @@ public class PandsService {
             }
 
             pand.setPandCode(pandCode.trim());
-
+            pand.setEngineerName(projectProfile.getEngineerName());
 //            pand.setAdditionalQuantity(0);
 
             changeHistoryLog.saveChange(pandCode, pand.toString(), pand.toString(), "save", request);
@@ -155,11 +119,6 @@ public class PandsService {
             Optional<Pand> pand = getPandById(id);
             String requestMessage = pand.toString();
 
-            if (pand == null) {
-                Exception e = new Exception();
-                e.printStackTrace();
-                return new ResponseEntity<>(pand.get(), HttpStatus.NOT_FOUND);
-            }
             DecimalFormat df = new DecimalFormat("#.###");
 
 
@@ -180,6 +139,10 @@ public class PandsService {
 //            } else {
 //                width = updatedPand.getWidth();
 //            }
+
+            if(pand.isEmpty()){
+                throw new ResourceNotFoundException("Pand not found");
+            }
 
             pand.get().setUpdatedDate(formattedDate);
             pand.get().setUnit(updatedPand.getUnit());
@@ -218,14 +181,14 @@ public class PandsService {
 
             changeHistoryLog.saveChange(pandCode, requestMessage, pand.toString(), "update", request);
 
-            List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.jobOrdersByPandCode(pand.get().getProjectProfileId(), pand.get().getPandCode());
-            for (int i = 0; i < pandsToJobOrders.size(); i++) {
-                pandsToJobOrders.get(i).setPandCode(updatedPand.getPandCode());
-                pandsToJobOrders.get(i).setRawType(pand.get().getRawType());
-                pandsToJobOrders.get(i).setRawUsed(pand.get().getRawUsed());
-                pandsToJobOrders.get(i).setFinishType(pand.get().getFinishType());
-                pandsToJobOrders.get(i).setThickness(pand.get().getThickness());
-                pandsToJobOrderRepository.save(pandsToJobOrders.get(i));
+            List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.findByProjectProfileIdAndPandCode(pand.get().getProjectProfileId(), pand.get().getPandCode());
+            for (PandsToJobOrder pandsToJobOrder : pandsToJobOrders) {
+                pandsToJobOrder.setPandCode(updatedPand.getPandCode());
+                pandsToJobOrder.setRawType(pand.get().getRawType());
+                pandsToJobOrder.setRawUsed(pand.get().getRawUsed());
+                pandsToJobOrder.setFinishType(pand.get().getFinishType());
+                pandsToJobOrder.setThickness(pand.get().getThickness());
+                pandsToJobOrderRepository.save(pandsToJobOrder);
             }
 
             pand.get().setPandCode(updatedPand.getPandCode());
@@ -239,18 +202,15 @@ public class PandsService {
     }
 
     public void deletePand(Long id) {
-        Pand pand = pandsRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("pand Not Found for ID: " + id));
-
         pandsRepository.deleteById(id);
     }
 
     public CheckLimitResponse checkLimit() {
         List<Pand> pands = pandsRepository.findAll();
         CheckLimitResponse checkLimitResponse = new CheckLimitResponse();
-        for (int i = 0; i < pands.size(); i++) {
-            if (pands.get(i).getRestQuantity() < 0) {
-                checkLimitResponse.setMessage("تم تخطى الكمية المحدوده للبند رقم " + pands.get(i).getPandCode() + " للمشروع  " + pands.get(i).getProjectName());
+        for (Pand pand : pands) {
+            if (pand.getRestQuantity() < 0) {
+                checkLimitResponse.setMessage("تم تخطى الكمية المحدوده للبند رقم " + pand.getPandCode() + " للمشروع  " + pand.getProjectName());
                 checkLimitResponse.setFlag(1);
                 return checkLimitResponse;
             }
@@ -259,7 +219,7 @@ public class PandsService {
     }
 
 
-    public InputStreamResource getPandDetailsForEachJobOrder(String id, Long projectId) throws Exception {
+    public InputStreamResource getPandDetailsForEachJobOrder(String id, Long projectId) {
         try {
             com.aspose.cells.Workbook workbook = new com.aspose.cells.Workbook();
             WorksheetCollection worksheets = workbook.getWorksheets();
@@ -317,7 +277,7 @@ public class PandsService {
             sheet.getCells().get("A5").putValue("Print Date");
             sheet.getCells().get("A5").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("B5").putValue(formatter1.format(dNow) + " " + ft.format(dNow).toString());
+            sheet.getCells().get("B5").putValue(formatter1.format(dNow) + " " + ft.format(dNow));
             sheet.getCells().get("B5").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("C1").putValue("Pand Code");
@@ -393,7 +353,7 @@ public class PandsService {
             int rowIdx = 9;
 
 
-            List<String> pandsToJobOrders = pandsToJobOrderRepository.getPandDetails(projectId, id);
+            List<String> pandsToJobOrders = pandsToJobOrderRepository.findPandDetails(projectId, id);
             Double totalQuantityInJobOrders = 0.0;
             Double totalQuantityInExitJobOrders = 0.0;
             for (String entry : pandsToJobOrders) {
@@ -405,13 +365,13 @@ public class PandsService {
                     sheet.getCells().get("A" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                Double totalSumInJobOrders = pandsToJobOrderRepository.getSumByPandCodeAndJobOrder(projectId, id, entry);
+                Double totalSumInJobOrders = pandsToJobOrderRepository.sumMainTotalByPandCodeAndJobOrder(projectId, id, entry);
 
                 if (totalSumInJobOrders == null) {
                     totalSumInJobOrders = 0.0;
                 }
 
-                totalQuantityInJobOrders += Double.valueOf(totalSumInJobOrders);
+                totalQuantityInJobOrders += totalSumInJobOrders;
 
                 sheet.getCells().get("B" + rowIdx).putValue(totalSumInJobOrders); // الكميه لكل امر شغل
                 if (rowIdx % 2 != 0) {
@@ -420,7 +380,7 @@ public class PandsService {
                     sheet.getCells().get("B" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                Double totalExit = exitJobOrderRepository.getSumByJobOrderAndPand(pand.getProjectCode(), id, entry);
+                Double totalExit = exitJobOrderRepository.sumTotalByJobOrderAndPand(pand.getProjectCode(), id, entry);
 
                 if (totalExit == null) {
                     totalExit = 0.0;
@@ -552,25 +512,25 @@ public class PandsService {
             sheet.getCells().get("A1").putValue("Project Name");
             sheet.getCells().get("A1").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("B1").putValue(pands.get(0).getProjectName());
+            sheet.getCells().get("B1").putValue(pands.getFirst().getProjectName());
             sheet.getCells().get("B1").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("A3").putValue("Project Code");
             sheet.getCells().get("A3").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("B3").putValue(pands.get(0).getProjectCode());
+            sheet.getCells().get("B3").putValue(pands.getFirst().getProjectCode());
             sheet.getCells().get("B3").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("D1").putValue("Engineer Name");
             sheet.getCells().get("D1").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("E1").putValue(pands.get(0).getEngineerName());
+            sheet.getCells().get("E1").putValue(pands.getFirst().getEngineerName());
             sheet.getCells().get("E1").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("D3").putValue("Print Date");
             sheet.getCells().get("D3").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("E3").putValue(formatter1.format(dNow) + " " + ft.format(dNow).toString());
+            sheet.getCells().get("E3").putValue(formatter1.format(dNow) + " " + ft.format(dNow));
             sheet.getCells().get("E3").setStyle(discriptionDataStyle);
 
             Style shadowStyle = workbook.createStyle();
@@ -606,90 +566,91 @@ public class PandsService {
             sheet.getCells().get("I5").putValue("Unit");
             sheet.getCells().get("I5").setStyle(tableHeaderStyle);
 
-//            sheet.getCells().get("J5").putValue("Unit");
-//            sheet.getCells().get("J5").setStyle(tableHeaderStyle);
-
-//            sheet.getCells().get("K5").putValue("الاجمالى");
-//            sheet.getCells().get("K5").setStyle(tableHeaderStyle2);
-
             sheet.getCells().get("J5").putValue("Remaining Quantity");
             sheet.getCells().get("J5").setStyle(tableHeaderStyle);
 
-            InputStream imageStream = new ClassPathResource("static/ORYX.jpeg").getInputStream();
+            sheet.getCells().get("K5").putValue("Ordered");
+            sheet.getCells().get("K5").setStyle(tableHeaderStyle);
 
-            // Add the image to the worksheet (X, Y coordinates in pixels)
-            // Place the image inside the merged cells (A1:C5)
-            int pictureIndex = sheet.getPictures().add(0, 7, imageStream);
+            sheet.getCells().get("L5").putValue("Delivered");
+            sheet.getCells().get("L5").setStyle(tableHeaderStyle);
 
-            // Get the added picture
-            Picture picture = sheet.getPictures().get(pictureIndex);
+            InputStream imageStream =
+                    new ClassPathResource("static/ORYX.jpeg").getInputStream();
 
-            // Optionally, set the picture to fit within the merged area
-            picture.setPlacement(PlacementType.MOVE);
-            picture.setWidthScale(40); // Scale the image to fit width
-            picture.setHeightScale(20);
+            int pictureIndex =
+                    sheet.getPictures().add(0, 12, imageStream);
+
+            Picture picture =
+                    sheet.getPictures().get(pictureIndex);
+
+            picture.setPlacement(PlacementType.FREE_FLOATING);
+
+            picture.setWidthScale(45);
+            picture.setHeightScale(45);
 
             int rowIdx = 7;
+            double accomulatiedTotalOrdered = 0;
+            double accomulatiedTotalDelivered = 0;
+            for (Pand pand : pands) {
 
-            for (int i = 0; i < pands.size(); i++) {
-
-                sheet.getCells().get("A" + rowIdx).putValue(pands.get(i).getPandCode());
+                sheet.getCells().get("A" + rowIdx).putValue(pand.getPandCode());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("A" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("A" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("B" + rowIdx).putValue(pands.get(i).getDescription());
+                sheet.getCells().get("B" + rowIdx).putValue(pand.getDescription());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("B" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("B" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("C" + rowIdx).putValue(pands.get(i).getRawType());
+                sheet.getCells().get("C" + rowIdx).putValue(pand.getRawType());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("C" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("C" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("D" + rowIdx).putValue(pands.get(i).getThickness());
+                sheet.getCells().get("D" + rowIdx).putValue(pand.getThickness());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("D" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("D" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("E" + rowIdx).putValue(pands.get(i).getFinishType());
+                sheet.getCells().get("E" + rowIdx).putValue(pand.getFinishType());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("E" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("E" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("F" + rowIdx).putValue(pands.get(i).getRawUsed());
+                sheet.getCells().get("F" + rowIdx).putValue(pand.getRawUsed());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("F" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("G" + rowIdx).putValue(pands.get(i).getPrice());
+                sheet.getCells().get("G" + rowIdx).putValue(pand.getPrice());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("H" + rowIdx).putValue(pands.get(i).getMainQuantity());
+                sheet.getCells().get("H" + rowIdx).putValue(pand.getMainQuantity());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("H" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("I" + rowIdx).putValue(pands.get(i).getUnit());
+                sheet.getCells().get("I" + rowIdx).putValue(pand.getUnit());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
                 } else {
@@ -710,13 +671,44 @@ public class PandsService {
 //                    sheet.getCells().get("K" + rowIdx).setStyle(discriptionDataStyle);
 //                }
 
-                sheet.getCells().get("J" + rowIdx).putValue(pands.get(i).getRestQuantity());
+                sheet.getCells().get("J" + rowIdx).putValue(pand.getRestQuantity());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("J" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("J" + rowIdx).setStyle(discriptionDataStyle);
                 }
+
+                double totalOrdered = pandsToJobOrderRepository.sumMainTotalByPandCode(pand.getProjectProfileId(), pand.getPandCode());
+                accomulatiedTotalOrdered += totalOrdered;
+                sheet.getCells().get("K" + rowIdx).putValue(totalOrdered);
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("K" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("K" + rowIdx).setStyle(discriptionDataStyle);
+                }
+                double totalDelivered = exitJobOrderRepository.sumTotalByPandCode(pand.getProjectCode(), pand.getPandCode());
+
+                accomulatiedTotalDelivered += totalDelivered;
+                sheet.getCells().get("L" + rowIdx).putValue(totalDelivered);
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("L" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("L" + rowIdx).setStyle(discriptionDataStyle);
+                }
                 rowIdx++;
+            }
+
+            sheet.getCells().get("K" + rowIdx).putValue(accomulatiedTotalOrdered);
+            if (rowIdx % 2 != 0) {
+                sheet.getCells().get("K" + rowIdx).setStyle(shadowStyle);
+            } else {
+                sheet.getCells().get("K" + rowIdx).setStyle(discriptionDataStyle);
+            }
+            sheet.getCells().get("L" + rowIdx).putValue(accomulatiedTotalDelivered);
+            if (rowIdx % 2 != 0) {
+                sheet.getCells().get("L" + rowIdx).setStyle(shadowStyle);
+            } else {
+                sheet.getCells().get("L" + rowIdx).setStyle(discriptionDataStyle);
             }
 
 
@@ -742,7 +734,7 @@ public class PandsService {
         }
     }
 
-    public InputStreamResource getPandImage(Long id, Long projectId) throws Exception {
+    public InputStreamResource getPandImage(Long id, Long projectId) {
         try {
             com.aspose.cells.Workbook workbook = new com.aspose.cells.Workbook();
             WorksheetCollection worksheets = workbook.getWorksheets();
@@ -802,7 +794,7 @@ public class PandsService {
             sheet.getCells().get("A5").putValue("Print Date");
             sheet.getCells().get("A5").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("B5").putValue(formatter1.format(dNow) + " " + ft.format(dNow).toString());
+            sheet.getCells().get("B5").putValue(formatter1.format(dNow) + " " + ft.format(dNow));
             sheet.getCells().get("B5").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("C1").putValue("Pand Code");
@@ -898,7 +890,7 @@ public class PandsService {
                     int end = Math.min(d + partLength, input.length());
                     String part = input.substring(d, end);
 
-                    Row row = cells.getRows().get(rowIndex);
+//                    Row row = cells.getRows().get(rowIndex);
 //                    row.setHeight(50);
 
                     sheet.getCells().get("C" + rowIndex).putValue(part + "\n");

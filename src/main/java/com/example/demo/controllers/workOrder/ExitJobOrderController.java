@@ -232,7 +232,7 @@ public class ExitJobOrderController {
 
     @GetMapping("/all/serials")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public ResponseEntity<List<ExitJobOrder>> getAllExitJobOrdersBySerials(@RequestParam(value = "jobOrderId") String jobORderId) throws SQLException {
+    public ResponseEntity<List<String>> getAllExitJobOrdersBySerials(@RequestParam(value = "jobOrderId") String jobORderId) throws SQLException {
         try {
             return exitJobOrderService.getAllExitJobOrdersBySerial(jobORderId);
         } catch (Exception e) {
@@ -286,7 +286,7 @@ public class ExitJobOrderController {
 
     @GetMapping("/all/serialsByProject/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('MODERATOR') or hasRole('ADMIN')")
-    public ResponseEntity<List<ExitJobOrder>> getAllExitJobOrdersByProject(@PathVariable(value = "id") Long id) throws SQLException {
+    public ResponseEntity<List<String>> getAllExitJobOrdersByProject(@PathVariable(value = "id") Long id) throws SQLException {
         try {
             return exitJobOrderService.getAllExitJobOrdersByProject(id);
         } catch (Exception e) {

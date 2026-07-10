@@ -3,13 +3,13 @@ package com.example.demo.service.workOrder;
 import com.aspose.cells.*;
 import com.example.demo.models.*;
 import com.example.demo.payload.SendToBody;
+import com.example.demo.payload.login.response.MessageResponse;
 import com.example.demo.repository.*;
-import com.example.demo.security.jwt.JwtUtils;
 import com.example.demo.service.ChangeHistoryLog;
 import com.example.demo.service.FileStorageService;
-import com.example.demo.service.data.RawTypeService;
 import com.example.demo.service.pand.PandsService;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
@@ -18,6 +18,7 @@ import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -28,16 +29,16 @@ import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 
 @Service
+@Slf4j
 public class JobOrderService {
 
     @Autowired
     private ChangeHistoryLog changeHistoryLog;
-
-    @Autowired
-    private RawTypeService rawTypeService;
 
     @Autowired
     JobOrderRepository jobOrderRepository;
@@ -55,29 +56,25 @@ public class JobOrderService {
     ExitJobOrderRepository exitJobOrderRepository;
 
     @Autowired
-    ProjectProfileRepository projectProfileRepository;
-
-    @Autowired
-    JwtUtils jwtUtils;
-
-    @Autowired
     private FileStorageService storageService;
-
-//    private final AtomicLong counter = new AtomicLong();
 
 
     public ResponseEntity<List<JobOrder>> getAllJobOrders() {
-        return new ResponseEntity<>(jobOrderRepository.findAll(), HttpStatus.OK);
+        return new ResponseEntity<>(jobOrderRepository.FindAllGroupByProject(), HttpStatus.OK);
     }
 
     public JobOrder getJobOrderById(Long id) {
-        JobOrder jobOrder = jobOrderRepository.findById(id)
+
+//        String fileurl = storageService.getFileByJobOrder(id);
+//        jobOrder.setFileDB(fileurl);
+
+        return jobOrderRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("job order Not Found for ID: " + id));
+    }
 
-        String fileurl = storageService.getFileByJobOrder(id);
-        jobOrder.setFileDB(fileurl);
+    public JobOrder getJobOrderByNumber(String number) {
 
-        return jobOrder;
+        return jobOrderRepository.getByJobOrderNumber(number);
     }
 
     public List<JobOrder> getByProjectCode(String projectCode) {
@@ -89,22 +86,46 @@ public class JobOrderService {
         }
     }
 
+    @Transactional
     public List<JobOrder> getByProjectId(Long id) {
         try {
+            DecimalFormat df = new DecimalFormat("#.###");
             List<JobOrder> jobOrders = jobOrderRepository.getByProjectProfileId(id);
-            for (int i = 0; i < jobOrders.size(); i++) {
-                if (!jobOrders.get(i).isApproved()) {
-                    if (jobOrders.get(i).isManufacturingManager()) {
-                        jobOrders.get(i).setPendingFor("Manufacturing Manager");
-                    } else if (jobOrders.get(i).isStoreManager()) {
-                        jobOrders.get(i).setPendingFor("Store Manager");
-                    } else if (jobOrders.get(i).isPurchasingManager()) {
-                        jobOrders.get(i).setPendingFor("Purchasing Manager");
-                    } else if (jobOrders.get(i).isGeneralManager()) {
-                        jobOrders.get(i).setPendingFor("General Manager");
+            for (JobOrder jobOrder : jobOrders) {
+                if (!jobOrder.isApproved()) {
+                    if (jobOrder.isManufacturingManager()) {
+                        jobOrder.setPendingFor("Manufacturing Manager");
+                    } else if (jobOrder.isStoreManager()) {
+                        jobOrder.setPendingFor("Store Manager");
+                    } else if (jobOrder.isPurchasingManager()) {
+                        jobOrder.setPendingFor("Purchasing Manager");
+                    } else if (jobOrder.isGeneralManager()) {
+                        jobOrder.setPendingFor("General Manager");
                     }
-                    jobOrderRepository.save(jobOrders.get(i));
+                    jobOrderRepository.save(jobOrder);
                 }
+
+
+                double totalWorkOrder = 0.0;
+//                List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.jobOrdersByJobOrderId(id, jobOrder.getJobOrderNumber());
+                Double totalWorkOrderExit = exitJobOrderRepository.sumQuantity(jobOrders.getFirst().getProjectCode(), jobOrder.getJobOrderNumber());
+
+                for (PandsToJobOrder pandToJobOrder : jobOrder.getPandsToJobOrders()) {
+                    totalWorkOrder += (pandToJobOrder.getMainQuantity() * Double.parseDouble(pandToJobOrder.getRepetition()));
+                }
+
+                System.out.println("totalWorkOrder: "+totalWorkOrder);
+
+                if (totalWorkOrderExit == null) {
+                    jobOrder.setTotalDelivered((double) (0));
+                } else {
+
+//                    double RestTotalWorkOrder = totalWorkOrder - totalWorkOrderExit;
+//                    totalWorkOrder = totalWorkOrder - RestTotalWorkOrder;
+                    int result = (int) Double.parseDouble(df.format((totalWorkOrderExit / totalWorkOrder) * 100));
+                    jobOrder.setTotalDelivered((double) result);
+                }
+                jobOrderRepository.save(jobOrder);
             }
             return jobOrders;
         } catch (Exception e) {
@@ -140,7 +161,7 @@ public class JobOrderService {
     public ResponseEntity<JobOrder> updateJobOrder(Long id, JobOrder updatedJobOrder, int flag, HttpServletRequest request) {
 
         JobOrder jobOrder = jobOrderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("rawType Not Found for ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Work Order Not Found for ID: " + id));
 
         jobOrderRepository.save(jobOrder);
 
@@ -149,32 +170,45 @@ public class JobOrderService {
         return new ResponseEntity<>(jobOrder, HttpStatus.OK);
     }
 
-    public void deleteJobOrder(Long id, HttpServletRequest request) {
+    @Transactional
+    public ResponseEntity<?> deleteJobOrder(Long id, HttpServletRequest request) {
         try {
+            MessageResponse messageResponse;
             JobOrder jobOrder = jobOrderRepository.findById(id)
-                    .orElseThrow(() -> new ResourceNotFoundException("rawType Not Found for ID: " + id));
+                    .orElseThrow(() -> new ResourceNotFoundException("Work Order Not Found for ID: " + id));
+
+            if (jobOrder.isApproved()) {
+                return new ResponseEntity<>(new MessageResponse(" cannot remove on approved work order ", 1), HttpStatus.BAD_REQUEST);
+            }
+
+            List<ExitJobOrder> exitJobOrders = exitJobOrderRepository.findByJobOrderId(jobOrder.getJobOrderNumber());
+            if (!exitJobOrders.isEmpty()) {
+                return new ResponseEntity<>(new MessageResponse(" Not Allowed .... for permit job orders " + jobOrder.getJobOrderNumber(), 1), HttpStatus.OK);
+            }
 
             returnInDelete(jobOrder, request);
             changeHistoryLog.saveChange(jobOrder.getJobOrderNumber(), jobOrder.toString(), jobOrder.toString(), "delete", request);
 
             jobOrderRepository.deleteById(id);
+
+            return new ResponseEntity<>(new MessageResponse("Work Order Successfully Deleted",0),HttpStatus.OK);
         } catch (Exception e) {
-            System.out.printf("deleteJobOrder");
-            e.printStackTrace();
+            Logger.getLogger(JobOrderService.class.getName()).log(Level.SEVERE, null, e);
+            return new ResponseEntity<>("SomeThing Wrong During Deleting Work Order",HttpStatus.EXPECTATION_FAILED);
         }
     }
 
     public void returnInDelete(JobOrder jobOrder, HttpServletRequest request) {
         try {
             DecimalFormat df = new DecimalFormat("#.###");
-            List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.jobOrdersByJobOrderId(jobOrder.getProjectProfileId(), jobOrder.getJobOrderNumber());
+            List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.findByProjectProfileIdAndJobOrderId(jobOrder.getProjectProfileId(), jobOrder.getJobOrderNumber());
             for (PandsToJobOrder item : pandsToJobOrders) {
                 // First delete child entries
-                pandsToJobOrderRepository.deleteFromMutuleTable(item.getId());
+                pandsToJobOrderRepository.deleteRelationByPandsToJobOrderId(item.getId());
 
                 // Then update the related Pand
                 Pand pand = pandsService.getPandByPandCode(item.getPandCode(), item.getProjectProfileId());
-                pand.setRestQuantity(Double.valueOf(df.format(pand.getRestQuantity() + Double.valueOf(item.getTotal()))));
+                pand.setRestQuantity(Double.parseDouble(df.format(pand.getRestQuantity() + Double.parseDouble(item.getTotal()))));
                 pandsRepository.save(pand);
 
                 changeHistoryLog.saveChange(jobOrder.getJobOrderNumber(), item.toString(), item.toString(), "delete", request);
@@ -201,30 +235,25 @@ public class JobOrderService {
 //    }
 
     public JobOrder getByJobOrder(String jobOrderNumber) {
-        JobOrder jobOrder = jobOrderRepository.getByJobOrderNumber(jobOrderNumber);
-        return jobOrder;
+        return jobOrderRepository.getByJobOrderNumber(jobOrderNumber);
     }
 
 
 
     public List<JobOrder> getPendingJobOrder() {
-        List<JobOrder> jobOrder = jobOrderRepository.getPendingJobOrder();
-        return jobOrder;
+        return jobOrderRepository.getPendingJobOrder();
     }
 
     public List<JobOrder> getPendingManufacturingJobOrder() {
-        List<JobOrder> jobOrder = jobOrderRepository.getPendingManufacturingJobOrder();
-        return jobOrder;
+        return jobOrderRepository.getPendingManufacturingJobOrder();
     }
 
     public List<JobOrder> getPendingStoreJobOrder() {
-        List<JobOrder> jobOrder = jobOrderRepository.getPendingStoreJobOrder();
-        return jobOrder;
+        return jobOrderRepository.getPendingStoreJobOrder();
     }
 
     public List<JobOrder> getPendingPurchaseJobOrder() {
-        List<JobOrder> jobOrder = jobOrderRepository.getPendingPurchaseJobOrder();
-        return jobOrder;
+        return jobOrderRepository.getPendingPurchaseJobOrder();
     }
 
     public JobOrder revertWorkOrder(Long jobOrderId) {
@@ -237,9 +266,8 @@ public class JobOrderService {
     }
 
     public List<JobOrder> getRevertedJobOrder(String userName) {
-        List<JobOrder> revertedWorkOrdersByUser = jobOrderRepository.getRevertedWorkOrdersByUser(userName);
 
-        return revertedWorkOrdersByUser;
+        return jobOrderRepository.getRevertedWorkOrdersByUser(userName);
     }
 
     public JobOrder sendJobOrderToUser(SendToBody sendToBody, Long id) {
@@ -259,17 +287,15 @@ public class JobOrderService {
         jobOrder.get().setJobOrderName(jobOrder.get().getProjectCode());
         jobOrder.get().setApproved(true);
         jobOrder.get().setReverted(false);
-        jobOrder.get().setManufacturingManager(false);
-        jobOrder.get().setStoreManager(false);
+        jobOrder.get().setManufacturingManager(true);
+        jobOrder.get().setStoreManager(true);
         jobOrder.get().setPurchasingManager(false);
         jobOrder.get().setGeneralManager(false);
 
-        List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.jobOrdersByJobOrderId(jobOrder.get().getProjectProfileId(), jobOrder.get().getJobOrderNumber());
+        List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.findByProjectProfileIdAndJobOrderId(jobOrder.get().getProjectProfileId(), jobOrder.get().getJobOrderNumber());
         DecimalFormat df = new DecimalFormat("#.###");
         if (pandsToJobOrders != null) {
             for (int i = 0; i < pandsToJobOrders.size(); i++) {
-
-
                 pandsToJobOrders.get(i).setJobOrderName(jobOrder.get().getProjectCode());
                 pandsToJobOrders.get(i).setJobOrderId(jobOrder.get().getProjectCode().concat("/").concat(jobOrder.get().getJobOrderNumber()));
                 pandsToJobOrderRepository.save(pandsToJobOrders.get(i));
@@ -278,10 +304,10 @@ public class JobOrderService {
             jobOrder.get().setJobOrderNumber(jobOrder.get().getProjectCode().concat("/").concat(jobOrder.get().getJobOrderNumber()));
             jobOrderRepository.save(jobOrder.get());
 
-            Pand pand = pandsService.getPandByPandCode(pandsToJobOrders.get(0).getPandCode(), pandsToJobOrders.get(0).getProjectProfileId());
-
-            pand.setRestQuantity(Double.valueOf(df.format(pand.getMockQuantity())));
-            pandsRepository.save(pand);
+//            Pand pand = pandsService.getPandByPandCode(pandsToJobOrders.get(0).getPandCode(), pandsToJobOrders.get(0).getProjectProfileId());
+//
+//            pand.setRestQuantity(Double.valueOf(df.format(pand.getMockQuantity())));
+//            pandsRepository.save(pand);
 
 
 
@@ -325,7 +351,7 @@ public class JobOrderService {
         newJobOrder.setJobOrderDate(formatter1.format(dNow));
         newJobOrder.setJobOrderTime(ft.format(dNow));
 
-        List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.getByJobOrderId(jobOrder);
+        List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.findByJobOrderId(jobOrder);
 
 
         jobOrderRepository.save(newJobOrder);
@@ -397,7 +423,7 @@ public class JobOrderService {
             com.aspose.cells.Workbook workbook = new com.aspose.cells.Workbook();
             WorksheetCollection worksheets = workbook.getWorksheets();
             Worksheet sheet = worksheets.get(0);
-            sheet.setDisplayRightToLeft(true);
+            sheet.setDisplayRightToLeft(false);
 //            sheet.getCells().setRowHeight(7, 20);
 
             PageSetup pageSetup = sheet.getPageSetup();
@@ -454,7 +480,7 @@ public class JobOrderService {
             sheet.getCells().get("E1").putValue("Print Date");
             sheet.getCells().get("E1").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("F1").putValue(formatter1.format(dNow) + " " + ft.format(dNow).toString());
+            sheet.getCells().get("F1").putValue(formatter1.format(dNow) + " " + ft.format(dNow));
             sheet.getCells().get("F1").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("E3").putValue("Job Order #");
@@ -477,10 +503,10 @@ public class JobOrderService {
             sheet.getCells().get("B5").putValue("Quantity");
             sheet.getCells().get("B5").setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("C5").putValue("Rest Quantity");
+            sheet.getCells().get("C5").putValue("Exit Quantity");
             sheet.getCells().get("C5").setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("D5").putValue("Balance");
+            sheet.getCells().get("D5").putValue("Remaining");
             sheet.getCells().get("D5").setStyle(tableHeaderStyle);
 
 
@@ -500,10 +526,10 @@ public class JobOrderService {
 
             int rowIdx = 7;
 
-            List<String> pandsToJobOrders = pandsToJobOrderRepository.getJobOrderDetails(jobOrderNumber.get().getProjectProfileId(), jobOrder);
+            List<String> pandsToJobOrders = pandsToJobOrderRepository.findDistinctPandCodesByProjectProfileIdAndJobOrderId(jobOrderNumber.get().getProjectProfileId(), jobOrder);
             Double totalQuantityInJobOrders = 0.0;
             Double totalQuantityInExitJobOrders = 0.0;
-            if (pandsToJobOrders.size() > 0) {
+            if (!pandsToJobOrders.isEmpty()) {
                 for (String entry : pandsToJobOrders) {
 
                     sheet.getCells().get("A" + rowIdx).putValue(entry);  // رقم امر شغل
@@ -513,13 +539,13 @@ public class JobOrderService {
                         sheet.getCells().get("A" + rowIdx).setStyle(discriptionDataStyle);
                     }
 
-                    Double totalSumInJobOrders = pandsToJobOrderRepository.getSumByPandCodeAndJobOrder(jobOrderNumber.get().getProjectProfileId(), entry, jobOrder);
+                    Double totalSumInJobOrders = pandsToJobOrderRepository.sumMainTotalByPandCodeAndJobOrder(jobOrderNumber.get().getProjectProfileId(), entry, jobOrder);
 
                     if (totalSumInJobOrders == null) {
                         totalSumInJobOrders = 0.0;
                     }
 
-                    totalQuantityInJobOrders += Double.valueOf(totalSumInJobOrders);
+                    totalQuantityInJobOrders += totalSumInJobOrders;
 
                     sheet.getCells().get("B" + rowIdx).putValue(totalSumInJobOrders); // الكميه لكل امر شغل
                     if (rowIdx % 2 != 0) {
@@ -528,7 +554,7 @@ public class JobOrderService {
                         sheet.getCells().get("B" + rowIdx).setStyle(discriptionDataStyle);
                     }
 
-                    Double totalExit = exitJobOrderRepository.getSumByJobOrderAndPand(jobOrderNumber.get().getProjectCode(), entry, jobOrder);
+                    Double totalExit = exitJobOrderRepository.sumTotalByJobOrderAndPand(jobOrderNumber.get().getProjectCode(), entry, jobOrder);
 
                     if (totalExit == null) {
                         totalExit = 0.0;
@@ -629,5 +655,18 @@ public class JobOrderService {
         }
 
         return number;
+    }
+
+    public String deleteJobOrderImage(Long id) {
+        Optional<JobOrder> jobOrder = jobOrderRepository.findById(id);
+        try {
+            jobOrder.get().setImage(null);
+            jobOrderRepository.save(jobOrder.get());
+            System.out.println("deleted");
+            return "Image Deleted Successfully";
+        } catch (Exception e) {
+            System.out.println("not deleted");
+            return "Failed To Delete The Image";
+        }
     }
 }

@@ -148,64 +148,64 @@ public class RestQuantityForJobOrders {
 
             List<Pand> pands = pandsService.getPandByProjectId(id);
 
-            for (int i = 0; i < pands.size(); i++) {
+            for (Pand pand : pands) {
 
                 Row row = sheet.createRow(rowIdx);
                 Cell cellRawType = row.createCell(0);
-                cellRawType.setCellValue(pands.get(i).getProjectName());
+                cellRawType.setCellValue(pand.getProjectName());
                 cellRawType.setCellStyle(cellStyle);
 
                 Cell projectCode = row.createCell(1);
-                projectCode.setCellValue(pands.get(i).getProjectCode());
+                projectCode.setCellValue(pand.getProjectCode());
                 projectCode.setCellStyle(cellStyle);
 
                 Cell engName = row.createCell(2);
-                engName.setCellValue(pands.get(i).getEngineerName());
+                engName.setCellValue(pand.getEngineerName());
                 engName.setCellStyle(cellStyle);
 
                 Cell pandCode = row.createCell(3);
-                pandCode.setCellValue(pands.get(i).getPandCode());
+                pandCode.setCellValue(pand.getPandCode());
                 pandCode.setCellStyle(cellStyle);
 
                 Cell discription = row.createCell(4);
-                discription.setCellValue(pands.get(i).getDescription());
+                discription.setCellValue(pand.getDescription());
                 discription.setCellStyle(cellStyle);
 
 
                 Cell rawType = row.createCell(5);
-                rawType.setCellValue(pands.get(i).getRawType());
+                rawType.setCellValue(pand.getRawType());
                 rawType.setCellStyle(cellStyle);
 
                 Cell rawUsed = row.createCell(6);
-                rawUsed.setCellValue(pands.get(i).getRawUsed());
+                rawUsed.setCellValue(pand.getRawUsed());
                 rawUsed.setCellStyle(cellStyle);
 
                 Cell finishType = row.createCell(7);
-                finishType.setCellValue(pands.get(i).getFinishType());
+                finishType.setCellValue(pand.getFinishType());
                 finishType.setCellStyle(cellStyle);
 
                 Cell thickness = row.createCell(8);
-                thickness.setCellValue(pands.get(i).getThickness());
+                thickness.setCellValue(pand.getThickness());
                 thickness.setCellStyle(cellStyle);
 
                 Cell height = row.createCell(9);
-                height.setCellValue(pands.get(i).getHeight());
+                height.setCellValue(pand.getHeight());
                 height.setCellStyle(cellStyle);
 
                 Cell width = row.createCell(10);
-                width.setCellValue(pands.get(i).getWidth());
+                width.setCellValue(pand.getWidth());
                 width.setCellStyle(cellStyle);
 
                 Cell unit = row.createCell(11);
-                unit.setCellValue(pands.get(i).getUnit());
+                unit.setCellValue(pand.getUnit());
                 unit.setCellStyle(cellStyle);
 
                 Cell total = row.createCell(12);
-                total.setCellValue(pands.get(i).getMainQuantity());
+                total.setCellValue(pand.getMainQuantity());
                 total.setCellStyle(cellStyle);
 
-                Double totalAmount = exitJobOrderRepository.getSumByPandCode(pands.get(i).getProjectCode(), pands.get(i).getPandCode());
-                Double restTotalAmount = pandsToJobOrderRepository.getSumByPandCode(pands.get(i).getProjectProfileId(), pands.get(i).getPandCode());
+                Double totalAmount = exitJobOrderRepository.sumTotalByPandCode(pand.getProjectCode(), pand.getPandCode());
+                Double restTotalAmount = pandsToJobOrderRepository.sumMainTotalByPandCode(pand.getProjectProfileId(), pand.getPandCode());
 
                 if (totalAmount == null) {
                     totalAmount = 0.0;
@@ -216,7 +216,7 @@ public class RestQuantityForJobOrders {
                 }
 
                 Cell quantity = row.createCell(13);
-                quantity.setCellValue(pands.get(i).getTotalQuantity() - restTotalAmount);
+                quantity.setCellValue(pand.getTotalQuantity() - restTotalAmount);
                 quantity.setCellStyle(cellStyle);
 
                 Cell totalQuantity = row.createCell(14);
@@ -311,18 +311,18 @@ public class RestQuantityForJobOrders {
 
         List<Pand> pands = pandsService.getPandByProjectId(id);
 
-        if (pands.size() > 0) {
+        if (!pands.isEmpty()) {
 
             sheet.getCells().get("A1").putValue("Project Name: ");
             sheet.getCells().get("A1").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("B1").putValue(pands.get(0).getProjectName());
+            sheet.getCells().get("B1").putValue(pands.getFirst().getProjectName());
             sheet.getCells().get("B1").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("A3").putValue("Project Code: ");
             sheet.getCells().get("A3").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("B3").putValue(pands.get(0).getProjectCode());
+            sheet.getCells().get("B3").putValue(pands.getFirst().getProjectCode());
             sheet.getCells().get("B3").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("D1").putValue("Engineer name: ");
@@ -331,7 +331,7 @@ public class RestQuantityForJobOrders {
             sheet.getCells().get("E1").putValue("");
             sheet.getCells().get("E1").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("F1").putValue(pands.get(0).getEngineerName());
+            sheet.getCells().get("F1").putValue(pands.getFirst().getEngineerName());
             sheet.getCells().get("F1").setStyle(discriptionDataStyle);
 
 
@@ -416,9 +416,9 @@ public class RestQuantityForJobOrders {
             int rowIdx = 7;
 
 
-            for (int i = 0; i < pands.size(); i++) {
+            for (Pand pand : pands) {
 
-                sheet.getCells().get("A" + rowIdx).putValue(pands.get(i).getPandCode());
+                sheet.getCells().get("A" + rowIdx).putValue(pand.getPandCode());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("A" + rowIdx).setStyle(shadowStyle);
                 } else {
@@ -426,7 +426,7 @@ public class RestQuantityForJobOrders {
                 }
 
 
-                sheet.getCells().get("B" + rowIdx).putValue(pands.get(i).getDescription());
+                sheet.getCells().get("B" + rowIdx).putValue(pand.getDescription());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("B" + rowIdx).setStyle(shadowStyle);
                 } else {
@@ -434,7 +434,7 @@ public class RestQuantityForJobOrders {
                 }
 
 
-                sheet.getCells().get("C" + rowIdx).putValue(pands.get(i).getRawType());
+                sheet.getCells().get("C" + rowIdx).putValue(pand.getRawType());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("C" + rowIdx).setStyle(shadowStyle);
                 } else {
@@ -448,14 +448,14 @@ public class RestQuantityForJobOrders {
 //                sheet.getCells().get("D" + rowIdx).setStyle(discriptionDataStyle);
 //            }
 
-                sheet.getCells().get("D" + rowIdx).putValue(pands.get(i).getFinishType());
+                sheet.getCells().get("D" + rowIdx).putValue(pand.getFinishType());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("D" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("D" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("E" + rowIdx).putValue(pands.get(i).getThickness());
+                sheet.getCells().get("E" + rowIdx).putValue(pand.getThickness());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("E" + rowIdx).setStyle(shadowStyle);
                 } else {
@@ -463,41 +463,41 @@ public class RestQuantityForJobOrders {
                 }
 
 
-                sheet.getCells().get("F" + rowIdx).putValue(pands.get(i).getHeight());
+                sheet.getCells().get("F" + rowIdx).putValue(pand.getHeight());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("F" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("G" + rowIdx).putValue(pands.get(i).getWidth());
+                sheet.getCells().get("G" + rowIdx).putValue(pand.getWidth());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("H" + rowIdx).putValue(pands.get(i).getUnit());
+                sheet.getCells().get("H" + rowIdx).putValue(pand.getUnit());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("H" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("I" + rowIdx).putValue(pands.get(i).getMainQuantity());
+                sheet.getCells().get("I" + rowIdx).putValue(pand.getMainQuantity());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("I" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                Double restTotalAmount = pandsToJobOrderRepository.getSumByPandCode(pands.get(i).getProjectProfileId(), pands.get(i).getPandCode());
+                Double restTotalAmount = pandsToJobOrderRepository.sumMainTotalByPandCode(pand.getProjectProfileId(), pand.getPandCode());
 
                 if (restTotalAmount == null) {
                     restTotalAmount = 0.0;
                 }
 
-                sheet.getCells().get("J" + rowIdx).putValue(pands.get(i).getMainQuantity() - restTotalAmount);
+                sheet.getCells().get("J" + rowIdx).putValue(pand.getMainQuantity() - restTotalAmount);
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("J" + rowIdx).setStyle(shadowStyle);
                 } else {
@@ -511,7 +511,7 @@ public class RestQuantityForJobOrders {
                     sheet.getCells().get("K" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                Double totalAmount = exitJobOrderRepository.getSumByPandCode(pands.get(i).getProjectCode(), pands.get(i).getPandCode());
+                Double totalAmount = exitJobOrderRepository.sumTotalByPandCode(pand.getProjectCode(), pand.getPandCode());
 
                 if (totalAmount == null) {
                     totalAmount = 0.0;
@@ -528,7 +528,7 @@ public class RestQuantityForJobOrders {
 
                 String tA = df.format(totalAmount);
 
-                sheet.getCells().get("M" + rowIdx).putValue(Double.valueOf(rTA) - Double.valueOf(tA));
+                sheet.getCells().get("M" + rowIdx).putValue(Double.parseDouble(rTA) - Double.parseDouble(tA));
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("M" + rowIdx).setStyle(shadowStyle);
                 } else {
@@ -553,8 +553,7 @@ public class RestQuantityForJobOrders {
 
         // 4. Return the PDF as a response
         ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(pdfOutputStream.toByteArray());
-        InputStreamResource resource = new InputStreamResource(pdfInputStream);
 
-        return resource;
+        return new InputStreamResource(pdfInputStream);
     }
 }

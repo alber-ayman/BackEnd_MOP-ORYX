@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.List;
 
 @Service
+@Transactional
 public class PdfFileService {
 
     @Autowired
@@ -57,7 +58,7 @@ public class PdfFileService {
         String unifiedSerial = "";
         try {
             System.out.println("innnn getPDF");
-            JobOrder lastJobOrder = jobOrderService.getByJobOrder(jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId());
+            JobOrder lastJobOrder = jobOrderService.getByJobOrder(jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
             Workbook workbook = new Workbook();
             WorksheetCollection worksheets = workbook.getWorksheets();
             Worksheet sheet = worksheets.get(0);
@@ -122,9 +123,9 @@ public class PdfFileService {
 
 //            sheet.getCells().setColumnWidth(1, 0);
 
-            sheet.getCells().get("B1").putValue("Work Order #");
+            sheet.getCells().get("B1").putValue("WorkOrder #");
             sheet.getCells().get("B1").setStyle(discriptionStyle);
-            sheet.getCells().get("C1").putValue(jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId());
+            sheet.getCells().get("C1").putValue(jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
             sheet.getCells().get("C1").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("B3").putValue("Created Date: ");
@@ -151,7 +152,7 @@ public class PdfFileService {
             sheet.getCells().get("B7").putValue("Engineer Name");
             sheet.getCells().get("B7").setStyle(discriptionStyle);
 
-            sheet.getCells().get("C7").putValue(jobOrderParent.getPandsToJobOrderList().getFirst().getOfficerName());
+            sheet.getCells().get("C7").putValue(jobOrderParent.getPandsToJobOrderList().getFirst().getEngineerName());
             sheet.getCells().get("C7").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("D1").putValue("Project");
@@ -176,11 +177,35 @@ public class PdfFileService {
             sheet.getCells().get("E5").setStyle(discriptionDataStyle);
 
             ProjectProfile projectProfile = projectProfileRepository.getById(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectProfileId());
-            sheet.getCells().get("F1").putValue("Serial:");
+            sheet.getCells().get("F1").putValue("Serial:  " + projectProfile.getSerial() );
             sheet.getCells().get("F1").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("G1").putValue(projectProfile.getSerial());
-            sheet.getCells().get("G1").setStyle(discriptionDataStyle);
+//            sheet.getCells().get("G1").putValue(projectProfile.getSerial());
+//            sheet.getCells().get("G1").setStyle(discriptionDataStyle);
+
+            Style referenceStyle = workbook.createStyle();
+
+            referenceStyle.getFont().setSize(13);
+
+            referenceStyle.setTextWrapped(true);
+
+            referenceStyle.setVerticalAlignment(TextAlignmentType.TOP);
+
+            Date now = new Date();
+
+
+            SimpleDateFormat dateFormat =
+                    new SimpleDateFormat("dd.MMM.yyyy");
+
+            sheet.getCells().merge(0, 10, 5, 4);
+            sheet.getCells().get("K1").putValue(
+                    "Reference: Ref.No. OR/WO/04/26\n" +
+                            "Revision: Rev.00\n" +
+                            "Date of Issue: " + dateFormat.format(now) + "\n" +
+                            "Note: Internal use only"
+            );
+
+            sheet.getCells().get("K1").setStyle(referenceStyle);
 
             projectProfile.setSerial(projectProfile.getSerial() + 1);
             projectProfileRepository.save(projectProfile);
@@ -203,7 +228,7 @@ public class PdfFileService {
             sheet.getCells().get("E9").putValue("Area");
             sheet.getCells().get("E9").setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("F9").putValue("Quantity");
+            sheet.getCells().get("F9").putValue("Number");
             sheet.getCells().get("F9").setStyle(tableHeaderStyle);
 
             sheet.getCells().get("G9").putValue("Height");
@@ -234,26 +259,29 @@ public class PdfFileService {
 
             // Add the image to the worksheet (X, Y coordinates in pixels)
             // Place the image inside the merged cells (A1:C5)
-            int pictureIndex = sheet.getPictures().add(0, 11, imageStream);
+            int pictureIndex = sheet.getPictures().add(0, 7, imageStream);
 
             // Get the added picture
             Picture picture = sheet.getPictures().get(pictureIndex);
 
             // Optionally, set the picture to fit within the merged area
             picture.setPlacement(PlacementType.MOVE);
-            picture.setWidthScale(60); // Scale the image to fit width
-            picture.setHeightScale(40); // Scale the image to fit height
+            picture.setWidthScale(80); // Scale the image to fit width
+            picture.setHeightScale(60); // Scale the image to fit height
+
+            sheet.getCells().get("F7").putValue("Delivery Note");
+            sheet.getCells().get("F7").setStyle(tableHeaderStyle);
 
             int rowIdx = 11;
 
-            List<String> jobOrdersByRawType = exitProcessJobOrderRepository.jobOrdersByRawType
-                    (jobOrderParent.getPandsToJobOrderList().get(0).getProjectCode()
-                            , jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId());
+            List<String> jobOrdersByRawType = exitProcessJobOrderRepository.findDistinctUnitsByProjectCodeAndJobOrderId
+                    (jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+                            , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
 
 //            unifiedSerial = jobOrdersByRawType.get(0).getUnifiedSerial();
 
 
-            sheet.getCells().merge(2, 6, 1, 4);  // (startRow, startColumn, totalRows, totalColumns)
+//            sheet.getCells().merge(2, 6, 1, 4);  // (startRow, startColumn, totalRows, totalColumns)
 
 //            sheet.getCells().get("G3").putValue(jobOrdersByRawType.get(0).getSerialNumber());
 //            sheet.getCells().get("G3").setStyle(discriptionDataStyle);
@@ -262,26 +290,27 @@ public class PdfFileService {
 //            sheet.getCells().get("G5").setStyle(discriptionDataStyle);
 
             List<ExitProcessJobOrder> jobOrdersByThickness = new ArrayList<>();
-            String addDisc = "";
+            StringBuilder addDisc = new StringBuilder();
 
             int m = 1;
             int i = 0;
             DecimalFormat df = new DecimalFormat("#.###");
             for (int k = 0; k < jobOrdersByRawType.size(); k++) {
-                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.jobOrdersByUnit(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.findByProjectCodeAndJobOrderIdAndUnit(
+                        jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
                         , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId()
                         , jobOrdersByRawType.get(k)));
                 System.out.println("jobOrdersByThickness size: " + jobOrdersByThickness.size());
                 System.out.println("out k=0");
                 if (k == 0) {
                     System.out.println("innn k=0");
-                    unifiedSerial = jobOrdersByThickness.get(0).getUnifiedSerial();
+                    unifiedSerial = jobOrdersByThickness.getFirst().getUnifiedSerial();
 
-                    sheet.getCells().get("G3").putValue(jobOrdersByThickness.getFirst().getSerialNumber());
-                    sheet.getCells().get("G3").setStyle(discriptionDataStyle);
+                    sheet.getCells().get("F3").putValue(jobOrdersByThickness.getFirst().getSerialNumber());
+                    sheet.getCells().get("F3").setStyle(discriptionDataStyle);
 
-                    sheet.getCells().get("G5").putValue(jobOrdersByThickness.getFirst().getUnifiedSerial());
-                    sheet.getCells().get("G5").setStyle(discriptionDataStyle);
+                    sheet.getCells().get("F5").putValue(jobOrdersByThickness.getFirst().getUnifiedSerial());
+                    sheet.getCells().get("F5").setStyle(discriptionDataStyle);
                 }
 
                 double totalQuantity = 0;
@@ -289,7 +318,6 @@ public class PdfFileService {
 
                 for (; i < jobOrdersByThickness.size(); i++) {
                     System.out.println("jobOrdersByThickness" + i);
-//                rowIdx++;
                     String discreption = "";
                     if (jobOrderParent.getPandsToJobOrderList().get(i).getAdditionalDescription() == null) {
                         discreption = "";
@@ -297,7 +325,7 @@ public class PdfFileService {
                         discreption = jobOrderParent.getPandsToJobOrderList().get(i).getAdditionalDescription();
                     }
 
-                    addDisc += discreption + "\n";
+                    addDisc.append(discreption).append("\n");
                     System.out.println("5555555555555555");
 
                     sheet.getCells().get("A" + rowIdx).putValue(m);
@@ -410,84 +438,106 @@ public class PdfFileService {
             sheet.getCells().get("D" + rowIdx).putValue("Project");
             sheet.getCells().get("D" + rowIdx).setStyle(discriptionStyle);
 
-            sheet.getCells().get("E" + rowIdx).putValue(jobOrderParent.getPandsToJobOrderList().get(0).getProjectCode() + " " + jobOrderParent.getPandsToJobOrderList().get(0).getProjectName());
+            sheet.getCells().get("E" + rowIdx).putValue(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode() + " " + jobOrderParent.getPandsToJobOrderList().getFirst().getProjectName());
             sheet.getCells().get("E" + rowIdx).setStyle(discriptionDataStyle);
 
             sheet.getCells().get("G" + rowIdx).putValue("Work Order #");
             sheet.getCells().get("G" + rowIdx).setStyle(discriptionStyle);
-            sheet.getCells().get("H" + rowIdx).putValue(jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId());
+            sheet.getCells().get("H" + rowIdx).putValue(jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
             sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
 
             InputStream billImageStream = new ClassPathResource("static/ORYX.jpeg").getInputStream();
 
             // Add the image to the worksheet (X, Y coordinates in pixels)
             // Place the image inside the merged cells (A1:C5)
-            int billPictureIndex = sheet.getPictures().add(rowIdx, 11, billImageStream);
+            int billPictureIndex = sheet.getPictures().add(rowIdx, 10, billImageStream);
 
             // Get the added picture
             Picture billPicture = sheet.getPictures().get(billPictureIndex);
 
             // Optionally, set the picture to fit within the merged area
             billPicture.setPlacement(PlacementType.MOVE);
-            billPicture.setWidthScale(60); // Scale the image to fit width
-            billPicture.setHeightScale(40); // Scale the image to fit height
+            billPicture.setWidthScale(80); // Scale the image to fit width
+            billPicture.setHeightScale(60); // Scale the image to fit height
 
             rowIdx += 2;
 
-            sheet.getCells().get("D" + rowIdx).putValue("Pand");
+            sheet.getCells().get("C" + rowIdx).putValue("#");
+            sheet.getCells().get("C" + rowIdx).setStyle(tableHeaderStyle);
+
+            sheet.getCells().get("D" + rowIdx).putValue("BOQ Reference");
             sheet.getCells().get("D" + rowIdx).setStyle(tableHeaderStyle);
 
             sheet.getCells().get("E" + rowIdx).putValue("Material");
             sheet.getCells().get("E" + rowIdx).setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("F" + rowIdx).putValue("Quantity");
+            sheet.getCells().get("F" + rowIdx).putValue("Unit");
             sheet.getCells().get("F" + rowIdx).setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("G" + rowIdx).putValue("Price");
+            sheet.getCells().get("G" + rowIdx).putValue("Quantity");
             sheet.getCells().get("G" + rowIdx).setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("H" + rowIdx).putValue("Total");
+            sheet.getCells().get("H" + rowIdx).putValue("Rate");
             sheet.getCells().get("H" + rowIdx).setStyle(tableHeaderStyle);
 
+            sheet.getCells().get("I" + rowIdx).putValue("Total");
+            sheet.getCells().get("I" + rowIdx).setStyle(tableHeaderStyle);
 
-            List<String> pands = exitProcessJobOrderRepository.getJobOrderDetails(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode(), jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
+
+            List<String> pands = exitProcessJobOrderRepository.findDistinctPandCodesByProjectCodeAndJobOrderId(
+                    jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+                    , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
 
             System.out.println("2222222222222222");
             double totalBillQuantity = 0.0;
             double billTotalPrice = 0.0;
             double totalQuantityInMeter = 0.0;
-            for (int k = 0; k < pands.size(); k++) {
+            int billSerial = 1;
+            for (String s : pands) {
+
+
                 System.out.println("pands " + i);
                 rowIdx++;
-                Pand pand = pandsRepository.findByPandCodeAndProjectProfileId(pands.get(k), jobOrderParent.getPandsToJobOrderList().get(0).getProjectProfileId());
+                Pand pand = pandsRepository.findByPandCodeAndProjectProfileId(s, jobOrderParent.getPandsToJobOrderList().getFirst().getProjectProfileId());
                 System.out.println(pand.getPandCode());
+
+                sheet.getCells().get("C" + rowIdx).putValue(billSerial);
+
+                sheet.getCells().get("C" + rowIdx).setStyle(tableHeaderStyle);
+
                 sheet.getCells().get("D" + rowIdx).putValue(pand.getPandCode());
                 sheet.getCells().get("D" + rowIdx).setStyle(tableHeaderStyle);
 
                 sheet.getCells().get("E" + rowIdx).putValue(pand.getRawType());
                 sheet.getCells().get("E" + rowIdx).setStyle(tableHeaderStyle);
 
-                totalQuantityInMeter = exitProcessJobOrderRepository.getTotalJobOrderForBill(jobOrderParent.getPandsToJobOrderList().get(0).getProjectCode(), jobOrderParent.getPandsToJobOrderList().get(0).getJobOrderId(), pand.getPandCode());
+                sheet.getCells().get("F" + rowIdx).putValue(pand.getUnit());
+                sheet.getCells().get("F" + rowIdx).setStyle(tableHeaderStyle);
+
+                totalQuantityInMeter = exitProcessJobOrderRepository.sumTotalForBill(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+                        , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId()
+                        , pand.getPandCode());
 
                 totalBillQuantity += totalQuantityInMeter;
-                sheet.getCells().get("F" + rowIdx).putValue(df.format(totalQuantityInMeter));
-                sheet.getCells().get("F" + rowIdx).setStyle(tableHeaderStyle);
+                sheet.getCells().get("G" + rowIdx).putValue(df.format(totalQuantityInMeter));
+                sheet.getCells().get("G" + rowIdx).setStyle(tableHeaderStyle);
 
                 String cost = df.format(totalQuantityInMeter * pand.getPrice());
                 billTotalPrice += Double.parseDouble(cost);
-                sheet.getCells().get("G" + rowIdx).putValue(pand.getPrice());
-                sheet.getCells().get("G" + rowIdx).setStyle(tableHeaderStyle);
-
-                sheet.getCells().get("H" + rowIdx).putValue(cost);
+                sheet.getCells().get("H" + rowIdx).putValue(pand.getPrice());
                 sheet.getCells().get("H" + rowIdx).setStyle(tableHeaderStyle);
+
+                sheet.getCells().get("I" + rowIdx).putValue(cost);
+                sheet.getCells().get("I" + rowIdx).setStyle(tableHeaderStyle);
+                billSerial++;
             }
             rowIdx++;
 
-            sheet.getCells().get("F" + rowIdx).putValue(totalBillQuantity);
-            sheet.getCells().get("F" + rowIdx).setStyle(tableHeaderStyle);
+            sheet.getCells().get("G" + rowIdx).putValue(totalBillQuantity);
+            sheet.getCells().get("G" + rowIdx).setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("H" + rowIdx).putValue(billTotalPrice);
-            sheet.getCells().get("H" + rowIdx).setStyle(tableHeaderStyle);
+            sheet.getCells().get("I" + rowIdx).putValue(billTotalPrice);
+            sheet.getCells().get("I" + rowIdx).setStyle(tableHeaderStyle);
 
 
             //////////////////////////////////////////////////////////////////////
@@ -507,7 +557,7 @@ public class PdfFileService {
             ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(pdfOutputStream.toByteArray());
             InputStreamResource resource = new InputStreamResource(pdfInputStream);
 
-            deductingQuantityFromPands(jobOrderParent);
+            deductingQuantityFromPands(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode(),jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
 
             exitProcessJobOrderRepository.deleteAll();
 
@@ -523,54 +573,55 @@ public class PdfFileService {
         return null;
     }
 
-    public void deductingQuantityFromPands(JobOrderParent jobOrderParent) {
+    public void deductingQuantityFromPands(String projectCode,String jobOrderId) {
         try {
 
-            List<String> jobOrdersByRawType = exitProcessJobOrderRepository.jobOrdersByRawType
-                    (jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
-                            , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
-
-            List<ExitProcessJobOrder> jobOrdersByThickness = new ArrayList<>();
-
-            int m = 1;
-
-            DecimalFormat df = new DecimalFormat("#.###");
-            int i = 0;
-            for (int k = 0; k < jobOrdersByRawType.size(); k++) {
-                System.out.println("jobOrdersByRawType " + k);
-                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.jobOrdersByUnit(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
-                        , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId()
-                        , jobOrdersByRawType.get(k)));
-
-                for (; i < jobOrdersByThickness.size(); i++) {
-                    System.out.println("jobOrdersByThickness " + i);
-                    double result = 0.0;
-                    String formattedNumber = "";
-                    if (jobOrdersByThickness.get(i).getUnit().equals("Longitudinal meter")) {
-                        result = (Double.parseDouble(jobOrdersByThickness.get(i).getHeight())) *
-                                (jobOrdersByThickness.get(i).getQuantity());
-                        formattedNumber = df.format(result / 100);
-
-                    } else if (jobOrdersByThickness.get(i).getUnit().equals("Square Meter")) {
-                        result = (Double.parseDouble(jobOrdersByThickness.get(i).getHeight())) *
-                                (Double.parseDouble(jobOrdersByThickness.get(i).getWidth())) *
-                                (jobOrdersByThickness.get(i).getQuantity());
-                        formattedNumber = df.format(result / 10000);
-
-                    } else {
-                        formattedNumber = String.valueOf(jobOrdersByThickness.get(i).getQuantity());
-                    }
-
-                    PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository.findByUniqueIdAndJobOrderIdAndWidthAndHeight
-                            (jobOrdersByThickness.get(i).getUniqueId(), jobOrdersByThickness.get(i).getJobOrderId()
-                            ,jobOrdersByThickness.get(i).getWidth(),jobOrdersByThickness.get(i).getHeight());
-                    String totalAfterExit = String.valueOf(df.format(Double.parseDouble(pandsToJobOrder.getTotal()) - Double.parseDouble(formattedNumber)));
-                    pandsToJobOrder.setTotal(totalAfterExit);
-                    double result2 = pandsToJobOrder.getQuantity() - jobOrdersByThickness.get(i).getQuantity();
-                    pandsToJobOrder.setQuantity(result2);
-                    pandsToJobOrderRepository.save(pandsToJobOrder);
-                }
-            }
+//            List<String> jobOrdersByRawType = exitProcessJobOrderRepository.jobOrdersByRawType
+//                    (jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+//                            , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId());
+//
+//            List<ExitProcessJobOrder> jobOrdersByThickness = new ArrayList<>();
+//
+//            int m = 1;
+//
+//            DecimalFormat df = new DecimalFormat("#.###");
+//            int i = 0;
+//            for (int k = 0; k < jobOrdersByRawType.size(); k++) {
+//                System.out.println("jobOrdersByRawType " + k);
+//                jobOrdersByThickness.addAll(exitProcessJobOrderRepository.jobOrdersByUnit(jobOrderParent.getPandsToJobOrderList().getFirst().getProjectCode()
+//                        , jobOrderParent.getPandsToJobOrderList().getFirst().getJobOrderId()
+//                        , jobOrdersByRawType.get(k)));
+//
+//                for (; i < jobOrdersByThickness.size(); i++) {
+//                    System.out.println("jobOrdersByThickness " + i);
+//                    double result = 0.0;
+//                    String formattedNumber = "";
+//                    if (jobOrdersByThickness.get(i).getUnit().equals("Longitudinal meter")) {
+//                        result = (Double.parseDouble(jobOrdersByThickness.get(i).getHeight())) *
+//                                (jobOrdersByThickness.get(i).getQuantity());
+//                        formattedNumber = df.format(result / 100);
+//
+//                    } else if (jobOrdersByThickness.get(i).getUnit().equals("Square Meter")) {
+//                        result = (Double.parseDouble(jobOrdersByThickness.get(i).getHeight())) *
+//                                (Double.parseDouble(jobOrdersByThickness.get(i).getWidth())) *
+//                                (jobOrdersByThickness.get(i).getQuantity());
+//                        formattedNumber = df.format(result / 10000);
+//
+//                    } else {
+//                        formattedNumber = String.valueOf(jobOrdersByThickness.get(i).getQuantity());
+//                    }
+//
+//                    PandsToJobOrder pandsToJobOrder = pandsToJobOrderRepository.findByUniqueIdAndJobOrderIdAndWidthAndHeight
+//                            (jobOrdersByThickness.get(i).getUniqueId(), jobOrdersByThickness.get(i).getJobOrderId()
+//                            ,jobOrdersByThickness.get(i).getWidth(),jobOrdersByThickness.get(i).getHeight());
+//                    String totalAfterExit = String.valueOf(df.format(Double.parseDouble(pandsToJobOrder.getTotal()) - Double.parseDouble(formattedNumber)));
+//                    pandsToJobOrder.setTotal(totalAfterExit);
+//                    double result2 = pandsToJobOrder.getQuantity() - jobOrdersByThickness.get(i).getQuantity();
+//                    pandsToJobOrder.setQuantity(result2);
+//                    pandsToJobOrderRepository.save(pandsToJobOrder);
+//                }
+//            }
+            pandsToJobOrderRepository.deductingQuantityFromPands(projectCode, jobOrderId);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -890,8 +941,8 @@ public class PdfFileService {
     public InputStreamResource getPdfBySerial(String serial) {
         try {
 
-            List<ExitJobOrder> allExitJobOrder = exitJobOrderRepository.getBySerial(serial);
-            JobOrder lastJobOrder = jobOrderService.getByJobOrder(allExitJobOrder.get(0).getJobOrderId());
+            List<ExitJobOrder> allExitJobOrder = exitJobOrderRepository.findBySerialNumber(serial);
+            JobOrder lastJobOrder = jobOrderService.getByJobOrder(allExitJobOrder.getFirst().getJobOrderId());
             Workbook workbook = new Workbook();
             WorksheetCollection worksheets = workbook.getWorksheets();
             Worksheet sheet = worksheets.get(0);
@@ -963,7 +1014,7 @@ public class PdfFileService {
 
             sheet.getCells().get("B1").putValue("Job Order #");
             sheet.getCells().get("B1").setStyle(discriptionStyle);
-            sheet.getCells().get("C1").putValue(allExitJobOrder.get(0).getJobOrderId());
+            sheet.getCells().get("C1").putValue(allExitJobOrder.getFirst().getJobOrderId());
             sheet.getCells().get("C1").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("B3").putValue("Created Date");
@@ -977,19 +1028,19 @@ public class PdfFileService {
             sheet.getCells().get("B5").putValue("Engineer Name");
             sheet.getCells().get("B5").setStyle(discriptionStyle);
 
-            sheet.getCells().get("C5").putValue(allExitJobOrder.get(0).getOfficerName());
+            sheet.getCells().get("C5").putValue(allExitJobOrder.getFirst().getOfficerName());
             sheet.getCells().get("C5").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("B7").putValue("Print Date");
             sheet.getCells().get("B7").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("C7").putValue(formatter1.format(dNow) + " " + ft.format(dNow).toString());
+            sheet.getCells().get("C7").putValue(formatter1.format(dNow) + " " + ft.format(dNow));
             sheet.getCells().get("C7").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("D1").putValue("Pand Code");
             sheet.getCells().get("D1").setStyle(discriptionStyle);
 
-            sheet.getCells().get("E1").putValue(allExitJobOrder.get(0).getProjectCode() + " " + allExitJobOrder.get(0).getProjectName());
+            sheet.getCells().get("E1").putValue(allExitJobOrder.getFirst().getProjectCode() + " " + allExitJobOrder.getFirst().getProjectName());
             sheet.getCells().get("E1").setStyle(discriptionDataStyle);
 
 //            sheet.getCells().get("E2").putValue(jobOrderParent.getPandsToJobOrderList().get(0).getProjectName());
@@ -998,16 +1049,16 @@ public class PdfFileService {
             sheet.getCells().get("D3").putValue("Area");
             sheet.getCells().get("D3").setStyle(discriptionStyle);
 
-            sheet.getCells().get("E3").putValue(allExitJobOrder.get(0).getInstallationArea());
+            sheet.getCells().get("E3").putValue(allExitJobOrder.getFirst().getInstallationArea());
             sheet.getCells().get("E3").setStyle(discriptionDataStyle);
 
             sheet.getCells().get("D5").putValue("Floor");
             sheet.getCells().get("D5").setStyle(discriptionStyle);
 
-            sheet.getCells().get("E5").putValue(allExitJobOrder.get(0).getFloor());
+            sheet.getCells().get("E5").putValue(allExitJobOrder.getFirst().getFloor());
             sheet.getCells().get("E5").setStyle(discriptionDataStyle);
 
-            ProjectProfile projectProfile = projectProfileRepository.getById(allExitJobOrder.get(0).getProjectProfileId());
+            ProjectProfile projectProfile = projectProfileRepository.getById(allExitJobOrder.getFirst().getProjectProfileId());
             sheet.getCells().get("F1").putValue("Serial:");
             sheet.getCells().get("F1").setStyle(discriptionDataStyle);
 
@@ -1078,9 +1129,9 @@ public class PdfFileService {
 
             int rowIdx = 11;
 
-            List<String> jobOrdersByRawType = exitJobOrderRepository.jobOrdersByRawType
-                    (allExitJobOrder.get(0).getProjectCode()
-                            , allExitJobOrder.get(0).getJobOrderId()
+            List<String> distinctUnites = exitJobOrderRepository.findDistinctUnites
+                    (allExitJobOrder.getFirst().getProjectCode()
+                            , allExitJobOrder.getFirst().getJobOrderId()
                             , serial);
 
 
@@ -1089,7 +1140,7 @@ public class PdfFileService {
             sheet.getCells().get("G3").putValue(serial);
             sheet.getCells().get("G3").setStyle(discriptionDataStyle);
 
-            sheet.getCells().get("G5").putValue(allExitJobOrder.get(0).getUnifiedSerial());
+            sheet.getCells().get("G5").putValue(allExitJobOrder.getFirst().getUnifiedSerial());
             sheet.getCells().get("G5").setStyle(discriptionDataStyle);
 
             String addDisc = "";
@@ -1100,11 +1151,11 @@ public class PdfFileService {
             int i = 0;
 
 
-            for (int k = 0; k < jobOrdersByRawType.size(); k++) {
+            for (String unit : distinctUnites) {
 
-                jobOrdersByThickness.addAll(exitJobOrderRepository.jobOrdersByUnit(allExitJobOrder.get(0).getProjectCode()
-                        , allExitJobOrder.get(0).getJobOrderId()
-                        , jobOrdersByRawType.get(k)
+                jobOrdersByThickness.addAll(exitJobOrderRepository.findByUnit(allExitJobOrder.getFirst().getProjectCode()
+                        , allExitJobOrder.getFirst().getJobOrderId()
+                        , unit
                         , serial));
 
                 double totalQuantity = 0;
@@ -1112,13 +1163,6 @@ public class PdfFileService {
 
                 for (; i < jobOrdersByThickness.size(); i++) {
 
-//                sheet.getCells().get("C" + rowIdx).putValue(jobOrdersByThickness.get(i).getRawType());
-//                sheet.getCells().get("C" + rowIdx).setStyle(style2);
-//
-//                sheet.getCells().get("D" + rowIdx).putValue(jobOrdersByThickness.get(i).getThickness() + "سم ");
-//                sheet.getCells().get("D" + rowIdx).setStyle(style2);
-
-//                rowIdx++;
                     String discreption = "";
                     if (jobOrdersByThickness.get(i).getAdditionalDescription() == null) {
                         discreption = "";
@@ -1209,14 +1253,14 @@ public class PdfFileService {
 
 
                     double result = 0.0;
-                    String unit = "";
+                    String unitName = "";
                     DecimalFormat df = new DecimalFormat("#,###.000");
                     String formattedNumber = "";
                     if (jobOrdersByThickness.get(i).getUnit().equals("Longitudinal meter")) {
                         result = (Double.valueOf(jobOrdersByThickness.get(i).getHeight())) *
                                 (Double.valueOf(jobOrdersByThickness.get(i).getQuantity()));
                         formattedNumber = df.format(result / 100);
-                        unit = "Longitudinal meter";
+                        unitName = "Longitudinal meter";
 //                    sheet.getCells().get("L" + rowIdx).putValue(formattedNumber);
 //                    sheet.getCells().get("M" + rowIdx).putValue(unit);
                     } else if (jobOrdersByThickness.get(i).getUnit().equals("Square Meter")) {
@@ -1230,15 +1274,15 @@ public class PdfFileService {
 //                    sheet.getCells().get("L" + rowIdx).putValue(formattedNumber);
 //                    sheet.getCells().get("M" + rowIdx).putValue(unit);
                     } else {
-                        unit = "Unit";
+                        unitName = "Unit";
                         formattedNumber = String.valueOf(jobOrdersByThickness.get(i).getQuantity());
-                        sheet.getCells().get("L" + rowIdx).putValue(formattedNumber + " " + unit);
+                        sheet.getCells().get("L" + rowIdx).putValue(formattedNumber + " " + unitName);
                     }
 
                     total += Double.valueOf(formattedNumber);
 
                     sheet.getCells().get("L" + rowIdx).putValue(formattedNumber);
-                    sheet.getCells().get("M" + rowIdx).putValue(unit);
+                    sheet.getCells().get("M" + rowIdx).putValue(unitName);
 
                     if (rowIdx % 2 != 0) {
                         sheet.getCells().get("L" + rowIdx).setStyle(shadowStyle);
@@ -1627,7 +1671,7 @@ public class PdfFileService {
         sheet.getCells().get("D5").putValue("Print Date");
         sheet.getCells().get("D5").setStyle(discriptionDataStyle);
 
-        sheet.getCells().get("E5").putValue(formatter1.format(dNow) + " " + ft.format(dNow).toString());
+        sheet.getCells().get("E5").putValue(formatter1.format(dNow) + " " + ft.format(dNow));
         sheet.getCells().get("E5").setStyle(discriptionDataStyle);
 
         sheet.getCells().get("A7").putValue("Pand code");
@@ -1800,7 +1844,7 @@ public class PdfFileService {
 //            }
 
             System.out.println("///////555555555555555555555/////////");
-            Double maintotal = pandsToJobOrderRepository.getSumByRawType(jobOrder.getProjectProfileId(), id, pandsToJobOrders.get(i).getRawType());
+            Double maintotal = pandsToJobOrderRepository.sumMainTotalByRawType(jobOrder.getProjectProfileId(), id, pandsToJobOrders.get(i).getRawType());
             if (maintotal == null) {
                 maintotal = 0.0;
             }
@@ -1812,7 +1856,7 @@ public class PdfFileService {
                 sheet.getCells().get("D" + rowIdx).setStyle(discriptionDataStyle);
             }
 
-            Double usedtotal = exitJobOrderRepository.getSumByRawType(jobOrder.getProjectCode(), id, pandsToJobOrders.get(i).getRawType());
+            Double usedtotal = exitJobOrderRepository.sumTotalByRawType(jobOrder.getProjectCode(), id, pandsToJobOrders.get(i).getRawType());
             if (usedtotal == null) {
                 usedtotal = 0.0;
             }
@@ -1834,19 +1878,19 @@ public class PdfFileService {
                 sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
             }
 
-            Double mainQuantity = pandsToJobOrderRepository.sumQuantityByRaw(jobOrder.getProjectProfileId(), id, pandsToJobOrders.get(i).getRawType());
+            Double mainQuantity = pandsToJobOrderRepository.sumMainQuantityByRawType(jobOrder.getProjectProfileId(), id, pandsToJobOrders.get(i).getRawType());
 
             if (mainQuantity == null) {
                 mainQuantity = 0.0;
             }
-            sheet.getCells().get("G" + rowIdx).putValue(df.format(mainQuantity * Integer.valueOf(pandsToJobOrders.get(i).getRepetition())));
+            sheet.getCells().get("G" + rowIdx).putValue(df.format(mainQuantity * Integer.parseInt(pandsToJobOrders.get(i).getRepetition())));
             if (rowIdx % 2 != 0) {
                 sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
             } else {
                 sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
             }
 
-            Double usedQuantity = exitJobOrderRepository.sumQuantityByRawType(jobOrder.getProjectCode(), id, pandsToJobOrders.get(i).getRawType());
+            Double usedQuantity = exitJobOrderRepository.sumQuantityByJobOrderAndRawType(jobOrder.getProjectCode(), id, pandsToJobOrders.get(i).getRawType());
 
             if (usedQuantity == null) {
                 usedQuantity = 0.0;
@@ -1858,7 +1902,7 @@ public class PdfFileService {
                 sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
             }
 
-            Double availableQuantity = (mainQuantity * Integer.valueOf(pandsToJobOrders.get(i).getRepetition())) - usedQuantity;
+            Double availableQuantity = (mainQuantity * Integer.parseInt(pandsToJobOrders.get(i).getRepetition())) - usedQuantity;
 
             sheet.getCells().get("I" + rowIdx).putValue(df.format(availableQuantity));
             if (rowIdx % 2 != 0) {
@@ -1889,9 +1933,8 @@ public class PdfFileService {
 
         // 4. Return the PDF as a response
         ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(pdfOutputStream.toByteArray());
-        InputStreamResource resource = new InputStreamResource(pdfInputStream);
 
-        return resource;
+        return new InputStreamResource(pdfInputStream);
     }
 
 

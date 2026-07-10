@@ -2,6 +2,7 @@ package com.example.demo.controllers.workOrder;
 
 import com.example.demo.models.FileDB;
 import com.example.demo.models.JobOrder;
+import com.example.demo.models.Pand;
 import com.example.demo.models.ProjectProfile;
 import com.example.demo.payload.CheckLimitResponse;
 import com.example.demo.payload.SendToBody;
@@ -127,12 +128,9 @@ public class JobOrderController {
 
     @DeleteMapping("/delete/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<String> deleteJobOrders(@PathVariable(value = "id") Long id , HttpServletRequest request) throws ResourceNotFoundException, SQLException {
+    public ResponseEntity<?> deleteJobOrders(@PathVariable(value = "id") Long id, HttpServletRequest request) throws ResourceNotFoundException, SQLException {
         try {
-            jobOrderService.deleteJobOrder(id,request);
-            return new ResponseEntity<>("Deleted Successfully", HttpStatus.OK);
-
-
+            return jobOrderService.deleteJobOrder(id, request);
         } catch (Exception e) {
             return new ResponseEntity<>("Exception", HttpStatus.BAD_REQUEST);
         }
@@ -318,6 +316,41 @@ public class JobOrderController {
         } catch (Exception e) {
 
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/uploadImage/{id}")
+    public ResponseEntity<String> uploadImage(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("description") String description,
+            @PathVariable("id") Long id) {
+
+        if (file.isEmpty()) {
+            return ResponseEntity.badRequest().body("No file selected");
+        }
+
+        try {
+            Optional<JobOrder> jobOrder = jobOrderRepository.findById(id);
+            jobOrder.get().setImageDescription(description);
+            jobOrder.get().setImage(file.getBytes());
+
+            jobOrderRepository.save(jobOrder.get());
+            return ResponseEntity.ok("Image saved to DB successfully");
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error saving image: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/jobOrderImage/delete/{jobOrderId}")
+    public ResponseEntity<String> deletePandImage(HttpServletResponse response, @PathVariable(value = "jobOrderId") Long id
+    ) {
+        try {
+            String message = jobOrderService.deleteJobOrderImage(id);
+
+            return ResponseEntity.ok(message);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 

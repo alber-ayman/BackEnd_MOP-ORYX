@@ -31,11 +31,11 @@ public class ChangeHistory {
     private String modifiedBy;
 
     @Lob
-    @Column(name = "message_Request")
+    @Column(name = "message_Request", columnDefinition = "LONGTEXT")
     private String messageRequest;
 
     @Lob
-    @Column(name = "message_Response")
+    @Column(name = "message_Response", columnDefinition = "LONGTEXT")
     private String messageResponse;
 
     private String action;

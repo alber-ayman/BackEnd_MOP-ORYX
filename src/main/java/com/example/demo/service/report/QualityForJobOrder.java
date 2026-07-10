@@ -128,65 +128,65 @@ public class QualityForJobOrder {
 
             int rowIdx = 1;
 
-            List<ExitJobOrder> pandsToRaws = exitJobOrderRepository.getByRawType(id);
+            List<String> pandsToRaws = exitJobOrderRepository.findDistinctRawTypes(id);
 
-            for (int k = 0; k < pandsToRaws.size(); k++) {
+            for (String pandsToRaw : pandsToRaws) {
 
-                List<ExitJobOrder> pands = exitJobOrderRepository.getAllByRawType(id, pandsToRaws.get(k).getRawType());
+                List<ExitJobOrder> pands = exitJobOrderRepository.findAllByRawType(id, pandsToRaw);
 
-                for (int i = 0; i < pands.size(); i++) {
+                for (ExitJobOrder pand : pands) {
 
                     Row row = sheet.createRow(rowIdx);
                     Cell cellRawType = row.createCell(0);
-                    cellRawType.setCellValue(pands.get(i).getProjectName());
+                    cellRawType.setCellValue(pand.getProjectName());
                     cellRawType.setCellStyle(cellStyle);
 
                     Cell projectCode = row.createCell(1);
-                    projectCode.setCellValue(pands.get(i).getProjectCode());
+                    projectCode.setCellValue(pand.getProjectCode());
                     projectCode.setCellStyle(cellStyle);
 
                     Cell engName = row.createCell(2);
-                    engName.setCellValue(pands.get(i).getEngineerName());
+                    engName.setCellValue(pand.getEngineerName());
                     engName.setCellStyle(cellStyle);
 
                     Cell pandCode = row.createCell(3);
-                    pandCode.setCellValue(pands.get(i).getPandCode());
+                    pandCode.setCellValue(pand.getPandCode());
                     pandCode.setCellStyle(cellStyle);
 
                     Cell discription = row.createCell(4);
-                    discription.setCellValue(pands.get(i).getDescription());
+                    discription.setCellValue(pand.getDescription());
                     discription.setCellStyle(cellStyle);
 
 
                     Cell rawType = row.createCell(5);
-                    rawType.setCellValue(pands.get(i).getRawType());
+                    rawType.setCellValue(pand.getRawType());
                     rawType.setCellStyle(cellStyle);
 
                     Cell rawUsed = row.createCell(6);
-                    rawUsed.setCellValue(pands.get(i).getRawUsed());
+                    rawUsed.setCellValue(pand.getRawUsed());
                     rawUsed.setCellStyle(cellStyle);
 
                     Cell finishType = row.createCell(7);
-                    finishType.setCellValue(pands.get(i).getFinishType());
+                    finishType.setCellValue(pand.getFinishType());
                     finishType.setCellStyle(cellStyle);
 
                     Cell thickness = row.createCell(8);
-                    thickness.setCellValue(pands.get(i).getThickness());
+                    thickness.setCellValue(pand.getThickness());
                     thickness.setCellStyle(cellStyle);
 
                     Cell height = row.createCell(9);
-                    height.setCellValue(pands.get(i).getHeight());
+                    height.setCellValue(pand.getHeight());
                     height.setCellStyle(cellStyle);
 
                     Cell width = row.createCell(10);
-                    width.setCellValue(pands.get(i).getWidth());
+                    width.setCellValue(pand.getWidth());
                     width.setCellStyle(cellStyle);
 
                     Cell unit = row.createCell(11);
-                    unit.setCellValue(pands.get(i).getUnit());
+                    unit.setCellValue(pand.getUnit());
                     unit.setCellStyle(cellStyle);
 
-                    String totalAmount = String.valueOf(exitJobOrderRepository.getSumByRawType(pands.get(i).getProjectCode(), pands.get(i).getRawType()));
+                    String totalAmount = String.valueOf(exitJobOrderRepository.sumQuantityByRawType(pand.getProjectCode(), pand.getRawType()));
 
                     if (totalAmount == null) {
                         totalAmount = "0";
@@ -196,7 +196,7 @@ public class QualityForJobOrder {
                     total.setCellValue(totalAmount);
                     total.setCellStyle(cellStyle);
 
-                    String totalAmountProducted = String.valueOf(exitJobOrderRepository.getSumByQuantityUsedRaws(pands.get(i).getProjectCode(), pands.get(i).getRawType()));
+                    String totalAmountProducted = String.valueOf(exitJobOrderRepository.sumQuantityUsedRaws(pand.getProjectCode(), pand.getRawType()));
 
                     if (totalAmountProducted == null) {
                         totalAmountProducted = "0";
@@ -251,7 +251,6 @@ public class QualityForJobOrder {
         WorksheetCollection worksheets = workbook.getWorksheets();
         Worksheet sheet = worksheets.get(0);
         sheet.setDisplayRightToLeft(false);
-//            sheet.getCells().setRowHeight(7, 20);
 
         PageSetup pageSetup = sheet.getPageSetup();
         pageSetup.setFooter(1, "Page &P of &N");
@@ -267,7 +266,6 @@ public class QualityForJobOrder {
         Style tableHeaderStyle = sheet.getCells().get("C1").getStyle();
         tableHeaderStyle.setHorizontalAlignment(TextAlignmentType.CENTER);
         tableHeaderStyle.setVerticalAlignment(TextAlignmentType.CENTER);
-//        tableHeaderStyle.getFont().setItalic(true);
         tableHeaderStyle.getFont().setSize(12);
         tableHeaderStyle.getFont().setBold(false);
         tableHeaderStyle.setBorder(BorderType.TOP_BORDER, CellBorderType.THIN, com.aspose.cells.Color.getBlack());
@@ -275,42 +273,21 @@ public class QualityForJobOrder {
         tableHeaderStyle.setBorder(BorderType.LEFT_BORDER, CellBorderType.THIN, com.aspose.cells.Color.getBlack());
         tableHeaderStyle.setBorder(BorderType.RIGHT_BORDER, CellBorderType.THIN, com.aspose.cells.Color.getBlack());
 
-//        Style tableHeaderStyle2 = sheet.getCells().get("C1").getStyle();
-//        tableHeaderStyle2.setHorizontalAlignment(TextAlignmentType.CENTER);
-//        tableHeaderStyle2.setVerticalAlignment(TextAlignmentType.CENTER);
-//        tableHeaderStyle2.getFont().setItalic(true);
-//        tableHeaderStyle2.getFont().setSize(9);
-//        tableHeaderStyle2.getFont().setBold(false);
-//        tableHeaderStyle2.setBorder(BorderType.TOP_BORDER, CellBorderType.THIN, com.aspose.cells.Color.getBlack());
-//        tableHeaderStyle2.setBorder(BorderType.BOTTOM_BORDER, CellBorderType.THIN, com.aspose.cells.Color.getBlack());
-//        tableHeaderStyle2.setBorder(BorderType.LEFT_BORDER, CellBorderType.THIN, com.aspose.cells.Color.getBlack());
-//        tableHeaderStyle2.setBorder(BorderType.RIGHT_BORDER, CellBorderType.THIN, com.aspose.cells.Color.getBlack());
-
-
         Style discriptionDataStyle = sheet.getCells().get("F3").getStyle();
         discriptionDataStyle.setHorizontalAlignment(TextAlignmentType.CENTER);
         discriptionDataStyle.setVerticalAlignment(TextAlignmentType.CENTER);
         discriptionDataStyle.getFont().setSize(11);
 
-        List<ExitJobOrder> pands = exitJobOrderRepository.getByRawType(id);
+        List<String> rawTypes = exitJobOrderRepository.findDistinctRawTypes(id);
 
         sheet.getCells().get("A1").putValue("Project Name");
         sheet.getCells().get("A1").setStyle(discriptionDataStyle);
 
-        sheet.getCells().get("B1").putValue(pands.get(0).getProjectName());
-        sheet.getCells().get("B1").setStyle(discriptionDataStyle);
-
         sheet.getCells().get("A3").putValue("Project Code");
         sheet.getCells().get("A3").setStyle(discriptionDataStyle);
 
-        sheet.getCells().get("B3").putValue(pands.get(0).getProjectCode());
-        sheet.getCells().get("B3").setStyle(discriptionDataStyle);
-
         sheet.getCells().get("D1").putValue("Engineer Name");
         sheet.getCells().get("D1").setStyle(discriptionDataStyle);
-
-        sheet.getCells().get("F1").putValue(pands.get(0).getEngineerName());
-        sheet.getCells().get("F1").setStyle(discriptionDataStyle);
 
         Style shadowStyle = workbook.createStyle();
         shadowStyle.setPattern(BackgroundType.SOLID);
@@ -383,105 +360,107 @@ public class QualityForJobOrder {
 
         int rowIdx = 7;
 
-        for (int i = 0; i < pands.size(); i++) {
+        for (String rawType : rawTypes) {
 
-//            List<ExitJobOrder> pands = exitJobOrderRepository.getAllByRawType(id, pandsToRaws.get(k).getRawType());
-//
-//            for (int i = 0; i < pands.size(); i++) {
+            List<ExitJobOrder> pands = exitJobOrderRepository.findAllByRawType(id, rawType);
 
-            sheet.getCells().get("A" + rowIdx).putValue(pands.get(i).getPandCode());
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("A" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("A" + rowIdx).setStyle(discriptionDataStyle);
+            sheet.getCells().get("B1").putValue(pands.getFirst().getProjectName());
+            sheet.getCells().get("B1").setStyle(discriptionDataStyle);
+
+            sheet.getCells().get("B3").putValue(pands.getFirst().getProjectCode());
+            sheet.getCells().get("B3").setStyle(discriptionDataStyle);
+
+            sheet.getCells().get("F1").putValue(pands.getFirst().getEngineerName());
+            sheet.getCells().get("F1").setStyle(discriptionDataStyle);
+
+            for (ExitJobOrder pand : pands) {
+
+                sheet.getCells().get("A" + rowIdx).putValue(pand.getPandCode());
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("A" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("A" + rowIdx).setStyle(discriptionDataStyle);
+                }
+
+                sheet.getCells().get("B" + rowIdx).putValue(pand.getDescription());
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("B" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("B" + rowIdx).setStyle(discriptionDataStyle);
+                }
+
+
+                sheet.getCells().get("C" + rowIdx).putValue(pand.getRawType());
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("C" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("C" + rowIdx).setStyle(discriptionDataStyle);
+                }
+
+                sheet.getCells().get("D" + rowIdx).putValue(pand.getFinishType());
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("D" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("D" + rowIdx).setStyle(discriptionDataStyle);
+                }
+
+                sheet.getCells().get("E" + rowIdx).putValue(pand.getThickness());
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("E" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("E" + rowIdx).setStyle(discriptionDataStyle);
+                }
+
+                sheet.getCells().get("F" + rowIdx).putValue(pand.getHeight());
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("F" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
+                }
+
+                sheet.getCells().get("G" + rowIdx).putValue(pand.getWidth());
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
+                }
+
+                sheet.getCells().get("H" + rowIdx).putValue(pand.getUnit());
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("H" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
+                }
+
+                String totalAmount = String.valueOf(exitJobOrderRepository.sumQuantityByRawType(pand.getProjectCode(), pand.getRawType()));
+
+                if (totalAmount == null) {
+                    totalAmount = "0";
+                }
+
+                String totalAmountProducted = String.valueOf(exitJobOrderRepository.sumQuantityUsedRaws(pand.getProjectCode(), pand.getRawType()));
+
+                if (totalAmountProducted == null) {
+                    totalAmountProducted = "0";
+                }
+
+                sheet.getCells().get("I" + rowIdx).putValue(totalAmount);
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("I" + rowIdx).setStyle(discriptionDataStyle);
+                }
+
+                sheet.getCells().get("J" + rowIdx).putValue(totalAmountProducted);
+                if (rowIdx % 2 != 0) {
+                    sheet.getCells().get("J" + rowIdx).setStyle(shadowStyle);
+                } else {
+                    sheet.getCells().get("J" + rowIdx).setStyle(discriptionDataStyle);
+                }
+                rowIdx++;
             }
-
-            sheet.getCells().get("B" + rowIdx).putValue(pands.get(i).getDescription());
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("B" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("B" + rowIdx).setStyle(discriptionDataStyle);
-            }
-
-
-            sheet.getCells().get("C" + rowIdx).putValue(pands.get(i).getRawType());
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("C" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("C" + rowIdx).setStyle(discriptionDataStyle);
-            }
-
-//                sheet.getCells().get("D" + rowIdx).putValue(pands.get(i).getRawUsed());
-//                if (rowIdx % 2 != 0) {
-//                    sheet.getCells().get("D" + rowIdx).setStyle(shadowStyle);
-//                } else {
-//                    sheet.getCells().get("D" + rowIdx).setStyle(discriptionDataStyle);
-//                }
-
-            sheet.getCells().get("D" + rowIdx).putValue(pands.get(i).getFinishType());
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("D" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("D" + rowIdx).setStyle(discriptionDataStyle);
-            }
-
-            sheet.getCells().get("E" + rowIdx).putValue(pands.get(i).getThickness());
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("E" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("E" + rowIdx).setStyle(discriptionDataStyle);
-            }
-
-            sheet.getCells().get("F" + rowIdx).putValue(pands.get(i).getHeight());
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("F" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
-            }
-
-            sheet.getCells().get("G" + rowIdx).putValue(pands.get(i).getWidth());
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
-            }
-
-            sheet.getCells().get("H" + rowIdx).putValue(pands.get(i).getUnit());
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("H" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
-            }
-
-            String totalAmount = String.valueOf(exitJobOrderRepository.getSumByRawType(pands.get(i).getProjectCode(), pands.get(i).getRawType()));
-
-            if (totalAmount == null) {
-                totalAmount = "0";
-            }
-
-            String totalAmountProducted = String.valueOf(exitJobOrderRepository.getSumByQuantityUsedRaws(pands.get(i).getProjectCode(), pands.get(i).getRawType()));
-
-            if (totalAmountProducted == null) {
-                totalAmountProducted = "0";
-            }
-
-            sheet.getCells().get("I" + rowIdx).putValue(totalAmount);
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("I" + rowIdx).setStyle(discriptionDataStyle);
-            }
-
-            sheet.getCells().get("J" + rowIdx).putValue(totalAmountProducted);
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("J" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("J" + rowIdx).setStyle(discriptionDataStyle);
-            }
-            rowIdx++;
+            rowIdx += 2;
         }
-//            rowIdx++;
-//        }
 
         for (int i = 4; i < rowIdx; i++) {
             sheet.getCells().setRowHeight(i, 18);

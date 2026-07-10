@@ -10,10 +10,12 @@ import java.util.stream.Collectors;
 import jakarta.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -60,10 +62,8 @@ public class AuthController {
     @Autowired
     JwtUtils jwtUtils;
 
-    //    @Autowired
-//    MsgLogging msgLogging;
     @PostMapping("/signin")
-    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) throws SQLException {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest)  {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword()));
@@ -73,7 +73,7 @@ public class AuthController {
 
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
             List<String> roles = userDetails.getAuthorities().stream()
-                    .map(item -> item.getAuthority())
+                    .map(GrantedAuthority::getAuthority)
                     .collect(Collectors.toList());
             Optional<User> user = userRepository.findByUsername(loginRequest.getUsername());
             return ResponseEntity.ok(new JwtResponse(jwt,
@@ -82,12 +82,14 @@ public class AuthController {
                     userDetails.getEmail(),
                     roles, user.get()));
         } catch (Exception e) {
-            return ResponseEntity.ok(e.toString());
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid username or password");
         }
     }
 
     @PostMapping("/changePassword")
-    public ResponseEntity<?> changePasswordUser(@Valid @RequestBody SignupRequest signUpRequest) throws SQLException {
+    public ResponseEntity<?> changePasswordUser(@Valid @RequestBody SignupRequest signUpRequest)  {
 
         try {
             Optional<User> user = userRepository.findByUsername(signUpRequest.getUsername());
@@ -101,16 +103,16 @@ public class AuthController {
                 if (!signUpRequest.getPassword().equals(signUpRequest.getEmail())) {
                     return ResponseEntity
                             .badRequest()
-                            .body(new MessageResponse("Error: Password dis-match"));
+                            .body(new MessageResponse("Error: Password dis-match", 1));
                 }
                 User user1 = user.get();
                 user1.setPassword(encoder.encode(signUpRequest.getPassword()));
                 userRepository.save(user1);
-                return ResponseEntity.ok(new MessageResponse("Password Change successfully!"));
+                return ResponseEntity.ok(new MessageResponse("Password Change successfully!", 1));
             } else {
                 return ResponseEntity
                         .badRequest()
-                        .body(new MessageResponse("Error: User Not Found"));
+                        .body(new MessageResponse("Error: User Not Found", 1));
             }
         } catch (Exception e) {
             return ResponseEntity.ok(e.toString());
@@ -118,19 +120,19 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) throws SQLException {
+    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest){
         try {
 
             if (userRepository.existsByUsername(signUpRequest.getUsername())) {
                 return ResponseEntity
                         .badRequest()
-                        .body(new MessageResponse("Error: Username is already taken!"));
+                        .body(new MessageResponse("Error: Username is already taken!", 1));
             }
 
             if (userRepository.existsByEmail(signUpRequest.getEmail())) {
                 return ResponseEntity
                         .badRequest()
-                        .body(new MessageResponse("Error: Email is already in use!"));
+                        .body(new MessageResponse("Error: Email is already in use!", 1));
             }
 
             // Create new user's account
@@ -176,7 +178,7 @@ public class AuthController {
             user.setRoles(roles);
             userRepository.save(user);
 
-            return ResponseEntity.ok(new MessageResponse("User registered successfully!"));
+            return ResponseEntity.ok(new MessageResponse("User registered successfully!", 1));
         } catch (Exception e) {
 
             return ResponseEntity.ok(e.toString());

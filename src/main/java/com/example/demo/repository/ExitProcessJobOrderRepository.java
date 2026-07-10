@@ -1,26 +1,83 @@
 package com.example.demo.repository;
 
-import com.example.demo.models.ExitJobOrder;
 import com.example.demo.models.ExitProcessJobOrder;
-import com.example.demo.models.PandsToJobOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-public interface ExitProcessJobOrderRepository extends JpaRepository<ExitProcessJobOrder,Long> {
-    @Query(value = "SELECT distinct(unit) FROM Exit_Process_Job_Order where project_code = :projectCode and job_order_id = :job_order_id", nativeQuery = true)
-    List<String> jobOrdersByRawType(@Param("projectCode")String projectCode, @Param("job_order_id")String jobOrderCode);
+@Repository
+public interface ExitProcessJobOrderRepository
+        extends JpaRepository<ExitProcessJobOrder, Long> {
 
-    @Query(value = "SELECT * FROM Exit_Process_Job_Order where project_code = :projectCode and job_order_id = :job_order_id and unit = :unit order by thickness desc", nativeQuery = true)
-    List<ExitProcessJobOrder> jobOrdersByUnit(@Param("projectCode")String projectCode,@Param("job_order_id")String jobOrderCode, @Param("unit")String unit);
+    /*
+     |--------------------------------------------------------------------------
+     | UNITS
+     |--------------------------------------------------------------------------
+     */
 
-    @Query(value = "SELECT  distinct(pand_code) FROM Exit_Process_Job_Order where project_code = :projectCode and job_order_id = :job_order_id" , nativeQuery = true)
-    List<String> getJobOrderDetails(@Param("projectCode") String projectCode, @Param("job_order_id") String jobOrderID);
+    @Query("""
+            SELECT DISTINCT e.unit
+            FROM ExitProcessJobOrder e
+            WHERE e.projectCode = :projectCode
+            AND e.jobOrderId = :jobOrderId
+            ORDER BY e.unit
+            """)
+    List<String> findDistinctUnitsByProjectCodeAndJobOrderId(
+            @Param("projectCode") String projectCode,
+            @Param("jobOrderId") String jobOrderId
+    );
 
-    @Query(value = "SELECT  sum(total) FROM Exit_Process_Job_Order where project_code = :projectCode and job_order_id = :job_order_id and pand_code = :pandCode " , nativeQuery = true)
-    Double getTotalJobOrderForBill(@Param("projectCode") String projectCode, @Param("job_order_id") String jobOrderID, @Param("pandCode") String pandCode);
+    @Query("""
+            SELECT e
+            FROM ExitProcessJobOrder e
+            WHERE e.projectCode = :projectCode
+            AND e.jobOrderId = :jobOrderId
+            AND e.unit = :unit
+            ORDER BY e.thickness DESC
+            """)
+    List<ExitProcessJobOrder> findByProjectCodeAndJobOrderIdAndUnit(
+            @Param("projectCode") String projectCode,
+            @Param("jobOrderId") String jobOrderId,
+            @Param("unit") String unit
+    );
 
+    /*
+     |--------------------------------------------------------------------------
+     | PANDS
+     |--------------------------------------------------------------------------
+     */
 
+    @Query("""
+            SELECT DISTINCT e.pandCode
+            FROM ExitProcessJobOrder e
+            WHERE e.projectCode = :projectCode
+            AND e.jobOrderId = :jobOrderId
+            ORDER BY e.pandCode
+            """)
+    List<String> findDistinctPandCodesByProjectCodeAndJobOrderId(
+            @Param("projectCode") String projectCode,
+            @Param("jobOrderId") String jobOrderId
+    );
+
+    /*
+     |--------------------------------------------------------------------------
+     | TOTALS
+     |--------------------------------------------------------------------------
+     */
+
+    @Query("""
+            SELECT COALESCE(SUM(e.total), 0)
+            FROM ExitProcessJobOrder e
+            WHERE e.projectCode = :projectCode
+            AND e.jobOrderId = :jobOrderId
+            AND e.pandCode = :pandCode
+            """)
+    Double sumTotalForBill(
+            @Param("projectCode") String projectCode,
+            @Param("jobOrderId") String jobOrderId,
+            @Param("pandCode") String pandCode
+    );
 }

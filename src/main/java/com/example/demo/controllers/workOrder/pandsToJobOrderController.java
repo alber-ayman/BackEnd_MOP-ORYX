@@ -1,13 +1,15 @@
 package com.example.demo.controllers.workOrder;
 
-import com.example.demo.DTO.MarbleItemDto;
+import com.example.demo.DTO.MarbleItemRequestDto;
 import com.example.demo.models.*;
 import com.example.demo.payload.CheckLimitResponse;
+import com.example.demo.payload.excel.message.ResponseMessage;
 import com.example.demo.service.ExcelFileService;
 import com.example.demo.service.workOrder.PandsToJobOrderService;
 import com.example.demo.service.workOrder.PreviewJobOrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
@@ -21,12 +23,16 @@ import org.springframework.web.bind.annotation.*;
 import java.io.ByteArrayInputStream;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
+import org.slf4j.Logger;
 
 //@CrossOrigin(origins = "http://192.168.1.249:4200")
 @CrossOrigin(origins = "*")
 @RestController
 @RequestMapping("/api/pandsToJobOrder")
 public class pandsToJobOrderController {
+
+    private static final Logger logger = LoggerFactory.getLogger(pandsToJobOrderController.class);
 
     @Autowired
     PandsToJobOrderService pandsToJobOrderService;
@@ -61,7 +67,7 @@ public class pandsToJobOrderController {
 
             return new ResponseEntity<>(pandsToJobOrders, HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request getByJobOrder", e);
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -70,13 +76,9 @@ public class pandsToJobOrderController {
     @PreAuthorize("hasRole('USER') or hasRole('Viewer') or hasRole('ADMIN')")
     public ResponseEntity<List<PandsToJobOrder>> getByJobOrderId(@PathVariable(name = "id") Long id) throws ResourceNotFoundException, SQLException {
         try {
-            List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderService.getAllByJobOrderId(id);
-//            JobOrderParent jobOrderParent = new JobOrderParent();
-//            jobOrderParent.getPandsToJobOrderList().addAll(pandsToJobOrders);
-
-            return new ResponseEntity<>(pandsToJobOrders, HttpStatus.OK);
+            return pandsToJobOrderService.getAllByJobOrderId(id);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request getByJobOrderId", e);
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -91,7 +93,7 @@ public class pandsToJobOrderController {
 
             return new ResponseEntity<>(pandsToJobOrders, HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request getByJobOrderWzNoZeros", e);
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -105,43 +107,41 @@ public class pandsToJobOrderController {
 
             return new ResponseEntity<>(pandsToJobOrders, HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request getByProjectId", e);
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @GetMapping("/jobOrderAndPandId/{id}/{pandId}")
     @PreAuthorize("hasRole('USER') or hasRole('Viewer') or hasRole('ADMIN')")
-    public ResponseEntity<PandsToJobOrder> getByjobOrderAndPandId(@PathVariable("id") String id,@PathVariable("pandId") String pandId) throws ResourceNotFoundException, SQLException {
+    public ResponseEntity<Optional<PandsToJobOrder>> getByjobOrderAndPandId(@PathVariable("id") String id, @PathVariable("pandId") String pandId) throws ResourceNotFoundException, SQLException {
         try {
             System.out.println("innnnnnnnnnnn");
-            PandsToJobOrder pandsToJobOrders = pandsToJobOrderService.getByjobOrderAndPandId(id,pandId);
+            Optional<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderService.getByJobOrderAndBandId(id,pandId);
 
             return new ResponseEntity<>(pandsToJobOrders, HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request getByjobOrderAndPandId", e);
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
 
-    @PostMapping("/save/{flag}")  // Creating Project profile
+    @PostMapping("/save/{flag}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PandsToJobOrder> saveChildPand(
             @RequestBody PandsToJobOrder pandsToJobOrder, @PathVariable(value = "flag") int flag, HttpServletRequest request) throws SQLException {
         try {
             PandsToJobOrder jobOrder= pandsToJobOrderService.saveChildPand(pandsToJobOrder,flag,request);
-            if(jobOrder.getFlag() == 1){
-                return new ResponseEntity<>(jobOrder, HttpStatus.OK);
-            }
+
             return new ResponseEntity<>(jobOrder, HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request saveChildPand", e);
             return new ResponseEntity<>(pandsToJobOrder, HttpStatus.EXPECTATION_FAILED);
         }
     }
 
-    @PostMapping("/saveToPreview")  // Creating Project profile
+    @PostMapping("/saveToPreview")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PreviewJobOrder> saveToPreview(
             @RequestBody PreviewJobOrder pandsToJobOrder) throws SQLException {
@@ -152,7 +152,7 @@ public class pandsToJobOrderController {
             }
             return new ResponseEntity<>(jobOrder, HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request saveToPreview", e);
             return new ResponseEntity<>(pandsToJobOrder, HttpStatus.EXPECTATION_FAILED);
         }
     }
@@ -175,23 +175,21 @@ public class pandsToJobOrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PandsToJobOrder> updateJobOrders(@PathVariable(value = "id") Long id, @RequestBody PandsToJobOrder jobOrder,@PathVariable(value = "flag") int flag,HttpServletRequest request) throws ResourceNotFoundException, SQLException {
         try {
-            return pandsToJobOrderService.updateJobOrder(id,jobOrder,flag,request);
+            return pandsToJobOrderService.updateJobOrder(id,jobOrder,request);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request updateJobOrders", e);
             return new ResponseEntity<>(jobOrder, HttpStatus.BAD_REQUEST);
         }
     }
 
     @DeleteMapping("/delete/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<PandsToJobOrder> updateDelete(@PathVariable(value = "id") Long id, HttpServletRequest request) throws ResourceNotFoundException, SQLException {
+    public ResponseEntity<ResponseMessage> deleteBandsToWorkOrder(@PathVariable(value = "id") Long id,
+                                                                  HttpServletRequest request) throws ResourceNotFoundException, SQLException {
         try {
-
             return pandsToJobOrderService.deletePandToJobOrder(id,request);
-
-
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request deleteBandsToWorkOrder", e);
             return new ResponseEntity<>( null , HttpStatus.BAD_REQUEST);
         }
     }
@@ -206,7 +204,7 @@ public class pandsToJobOrderController {
 
             return new ResponseEntity<>(checkLimitResponse, HttpStatus.OK);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Error while processing request returnJobOrders", e);
             CheckLimitResponse checkLimitResponse = new CheckLimitResponse();
             checkLimitResponse.setFlag(1);
             checkLimitResponse.setMessage("returned failed");
@@ -262,8 +260,8 @@ public class pandsToJobOrderController {
     }
 
     @PostMapping("/savePandToJobOrdersList")
-    public ResponseEntity<?> save(@RequestBody List<MarbleItemDto> items, HttpServletRequest request) throws SQLException {
-        List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderService.saveListJobOrderPands(items, request);
+    public ResponseEntity<?> save(@RequestBody MarbleItemRequestDto marbleItemRequestDto, HttpServletRequest request) throws SQLException {
+        List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderService.saveListJobOrderPands(marbleItemRequestDto, request);
         return ResponseEntity.ok(pandsToJobOrders);
     }
 

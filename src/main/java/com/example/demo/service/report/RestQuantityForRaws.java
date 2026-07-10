@@ -144,76 +144,76 @@ public class RestQuantityForRaws {
 
                 List<Pand> pands = pandsRepository.getPandByRawType(id, rawTypes.get(k));
 
-                Double result1 = 0.0;
-                Double result2 = 0.0;
-                Double result3 = 0.0;
-                Double result4 = 0.0;
-                Double result5 = 0.0;
+                double result1 = 0.0;
+                double result2 = 0.0;
+                double result3 = 0.0;
+                double result4 = 0.0;
+                double result5 = 0.0;
 
-                for (int i = 0; i < pands.size(); i++) {
+                for (Pand pand : pands) {
 
                     Row row = sheet.createRow(rowIdx);
                     Cell cellRawType = row.createCell(0);
-                    cellRawType.setCellValue(pands.get(i).getProjectName());
+                    cellRawType.setCellValue(pand.getProjectName());
                     cellRawType.setCellStyle(cellStyle);
 
                     Cell projectCode = row.createCell(1);
-                    projectCode.setCellValue(pands.get(i).getProjectCode());
+                    projectCode.setCellValue(pand.getProjectCode());
                     projectCode.setCellStyle(cellStyle);
 
                     Cell engName = row.createCell(2);
-                    engName.setCellValue(pands.get(i).getEngineerName());
+                    engName.setCellValue(pand.getEngineerName());
                     engName.setCellStyle(cellStyle);
 
                     Cell pandCode = row.createCell(3);
-                    pandCode.setCellValue(pands.get(i).getPandCode());
+                    pandCode.setCellValue(pand.getPandCode());
                     pandCode.setCellStyle(cellStyle);
 
                     Cell discription = row.createCell(4);
-                    discription.setCellValue(pands.get(i).getDescription());
+                    discription.setCellValue(pand.getDescription());
                     discription.setCellStyle(cellStyle);
 
                     Cell rawType = row.createCell(5);
-                    rawType.setCellValue(pands.get(i).getRawType());
+                    rawType.setCellValue(pand.getRawType());
                     rawType.setCellStyle(cellStyle);
 
                     Cell rawUsed = row.createCell(6);
-                    rawUsed.setCellValue(pands.get(i).getRawUsed());
+                    rawUsed.setCellValue(pand.getRawUsed());
                     rawUsed.setCellStyle(cellStyle);
 
                     Cell finishType = row.createCell(7);
-                    finishType.setCellValue(pands.get(i).getFinishType());
+                    finishType.setCellValue(pand.getFinishType());
                     finishType.setCellStyle(cellStyle);
 
                     Cell thickness = row.createCell(8);
-                    thickness.setCellValue(pands.get(i).getThickness());
+                    thickness.setCellValue(pand.getThickness());
                     thickness.setCellStyle(cellStyle);
 
                     Cell height = row.createCell(9);
-                    height.setCellValue(pands.get(i).getHeight());
+                    height.setCellValue(pand.getHeight());
                     height.setCellStyle(cellStyle);
 
                     Cell width = row.createCell(10);
-                    width.setCellValue(pands.get(i).getWidth());
+                    width.setCellValue(pand.getWidth());
                     width.setCellStyle(cellStyle);
 
                     Cell unit = row.createCell(11);
-                    unit.setCellValue(pands.get(i).getUnit());
+                    unit.setCellValue(pand.getUnit());
                     unit.setCellStyle(cellStyle);
 
                     Cell mainQuantity = row.createCell(12);
-                    mainQuantity.setCellValue(pands.get(i).getMainQuantity());
+                    mainQuantity.setCellValue(pand.getMainQuantity());
                     mainQuantity.setCellStyle(cellStyle);
 
-                    result1 += pands.get(i).getMainQuantity();
+                    result1 += pand.getMainQuantity();
 
                     Cell restQuantity = row.createCell(13);
-                    restQuantity.setCellValue(pands.get(i).getRestQuantity());
+                    restQuantity.setCellValue(pand.getRestQuantity());
                     restQuantity.setCellStyle(cellStyle);
 
-                    result2 += pands.get(i).getRestQuantity();
+                    result2 += pand.getRestQuantity();
 
-                    Double restTotalAmount = pandsToJobOrderRepository.getSumByRawTypeAndThinckness(pands.get(i).getProjectProfileId(), pands.get(i).getPandCode(), pands.get(i).getRawType(), pands.get(i).getThickness());
+                    Double restTotalAmount = pandsToJobOrderRepository.sumMainTotalByRawTypeAndThickness(pand.getProjectProfileId(), pand.getPandCode(), pand.getRawType(), pand.getThickness());
 
                     if (restTotalAmount == null) {
                         restTotalAmount = 0.0;
@@ -225,7 +225,7 @@ public class RestQuantityForRaws {
 
                     result3 += restTotalAmount;
 
-                    Double totalAmount = exitJobOrderRepository.getSumByRawTypeAndThinckness(pands.get(i).getProjectCode(), pands.get(i).getPandCode(), pands.get(i).getRawType(), pands.get(i).getThickness());
+                    Double totalAmount = exitJobOrderRepository.sumTotalByRawTypeAndThickness(pand.getProjectCode(), pand.getPandCode(), pand.getRawType(), pand.getThickness());
 
                     if (totalAmount == null) {
                         totalAmount = 0.0;
@@ -439,9 +439,9 @@ public class RestQuantityForRaws {
 
         List<String> rawTypes = pandsRepository.getRawsPandByProjectId(id);
 
-        for (int k = 0; k < rawTypes.size(); k++) {
+        for (String rawType : rawTypes) {
 
-            List<Pand> pands = pandsRepository.getPandByRawType(id, rawTypes.get(k));
+            List<Pand> pands = pandsRepository.getPandByRawType(id, rawType);
 
             Double result1 = 0.0;
             Double result2 = 0.0;
@@ -455,19 +455,19 @@ public class RestQuantityForRaws {
                     sheet.getCells().get("A1").putValue("Project Name");
                     sheet.getCells().get("A1").setStyle(discriptionDataStyle);
 
-                    sheet.getCells().get("B1").putValue(pands.get(0).getProjectName());
+                    sheet.getCells().get("B1").putValue(pands.getFirst().getProjectName());
                     sheet.getCells().get("B1").setStyle(discriptionDataStyle);
 
                     sheet.getCells().get("A3").putValue("Project Code");
                     sheet.getCells().get("A3").setStyle(discriptionDataStyle);
 
-                    sheet.getCells().get("B3").putValue(pands.get(0).getProjectCode());
+                    sheet.getCells().get("B3").putValue(pands.getFirst().getProjectCode());
                     sheet.getCells().get("B3").setStyle(discriptionDataStyle);
 
                     sheet.getCells().get("D1").putValue("Engineer Name");
                     sheet.getCells().get("D1").setStyle(discriptionDataStyle);
 
-                    sheet.getCells().get("F1").putValue(pands.get(0).getEngineerName());
+                    sheet.getCells().get("F1").putValue(pands.getFirst().getEngineerName());
                     sheet.getCells().get("F1").setStyle(discriptionDataStyle);
                 }
 
@@ -554,7 +554,7 @@ public class RestQuantityForRaws {
 
                 result2 += pands.get(i).getRestQuantity();
 
-                Double restTotalAmount = pandsToJobOrderRepository.getSumByRawTypeAndThinckness(pands.get(i).getProjectProfileId(), pands.get(i).getPandCode(), pands.get(i).getRawType(), pands.get(i).getThickness());
+                Double restTotalAmount = pandsToJobOrderRepository.sumMainTotalByRawTypeAndThickness(pands.get(i).getProjectProfileId(), pands.get(i).getPandCode(), pands.get(i).getRawType(), pands.get(i).getThickness());
 
                 if (restTotalAmount == null) {
                     restTotalAmount = 0.0;
@@ -569,7 +569,7 @@ public class RestQuantityForRaws {
 
                 result3 += restTotalAmount;
 
-                Double totalAmount = exitJobOrderRepository.getSumByRawTypeAndThinckness(pands.get(i).getProjectCode(), pands.get(i).getPandCode(), pands.get(i).getRawType(), pands.get(i).getThickness());
+                Double totalAmount = exitJobOrderRepository.sumTotalByRawTypeAndThickness(pands.get(i).getProjectCode(), pands.get(i).getPandCode(), pands.get(i).getRawType(), pands.get(i).getThickness());
 
                 if (totalAmount == null) {
                     totalAmount = 0.0;
@@ -645,8 +645,7 @@ public class RestQuantityForRaws {
 
         // 4. Return the PDF as a response
         ByteArrayInputStream pdfInputStream = new ByteArrayInputStream(pdfOutputStream.toByteArray());
-        InputStreamResource resource = new InputStreamResource(pdfInputStream);
 
-        return resource;
+        return new InputStreamResource(pdfInputStream);
     }
 }

@@ -28,6 +28,7 @@ public interface JobOrderRepository extends JpaRepository<JobOrder,Long> {
     @Query(value = "SELECT * FROM Job_Order where project_profile_id = :project_profile_id and work_order_header = :job_order_Number", nativeQuery = true)
     JobOrder getByProjectCodeAndJobOrderNumber(@Param("project_profile_id")Long projectCode,@Param("job_order_Number") String jobOrderNumber);
 
+
     List<JobOrder> getByProjectProfileId(Long id);
 
     JobOrder getByJobOrderNumber(String jobOrder);
@@ -53,4 +54,7 @@ public interface JobOrderRepository extends JpaRepository<JobOrder,Long> {
     List<JobOrder> getRevertedWorkOrdersByUser(@Param("userName") String userName);
 
     List<JobOrder> getByProjectCode(String projectCode);
+
+    @Query(value = "SELECT * FROM job_order order BY project_code asc", nativeQuery = true)
+    List<JobOrder> FindAllGroupByProject();
 }

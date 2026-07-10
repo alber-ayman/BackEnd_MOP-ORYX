@@ -23,7 +23,7 @@ public class RawTypes {
 
     private String rawTypeName;
 
-//    private double quantity;
+    private double number;
 //
 //    private double cost;
 
