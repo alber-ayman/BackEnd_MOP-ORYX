@@ -2,8 +2,6 @@ package com.example.demo.controllers.workOrder;
 
 import com.example.demo.models.FileDB;
 import com.example.demo.models.JobOrder;
-import com.example.demo.models.Pand;
-import com.example.demo.models.ProjectProfile;
 import com.example.demo.payload.CheckLimitResponse;
 import com.example.demo.payload.SendToBody;
 import com.example.demo.repository.FileDBRepository;
@@ -12,6 +10,7 @@ import com.example.demo.service.workOrder.JobOrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
@@ -22,14 +21,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-//@CrossOrigin(origins = "http://192.168.1.249:4200")
 @CrossOrigin(origins = "*")
-
+@Slf4j
 @RestController
 @RequestMapping("/api/jobOrder")
 public class JobOrderController {
@@ -99,7 +96,7 @@ public class JobOrderController {
     public ResponseEntity<JobOrder> saveJobOrders(
             @RequestBody JobOrder jobOrder, HttpServletRequest request) throws SQLException {
         try {
-            return jobOrderService.addNewJobORder(jobOrder,request);
+            return jobOrderService.addNewJobOrder(jobOrder,request);
         } catch (Exception e) {
             e.printStackTrace();
             return new ResponseEntity<>(jobOrder, HttpStatus.BAD_REQUEST);
@@ -110,7 +107,7 @@ public class JobOrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<JobOrder> updateJobOrders(@PathVariable(value = "id") Long id, @RequestBody JobOrder jobOrder, HttpServletRequest request) throws ResourceNotFoundException, SQLException {
         try {
-            return jobOrderService.updateJobOrder(id, jobOrder, 0,request);
+            return jobOrderService.updateJobOrder(id, jobOrder,request);
         } catch (Exception e) {
             return new ResponseEntity<>(jobOrder, HttpStatus.BAD_REQUEST);
         }
@@ -120,7 +117,7 @@ public class JobOrderController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<JobOrder> updateQuantity(@PathVariable(value = "id") Long id, @RequestBody JobOrder jobOrder, @PathVariable(value = "flag") int flag, HttpServletRequest request) throws ResourceNotFoundException, SQLException {
         try {
-            return jobOrderService.updateJobOrder(id, jobOrder, flag, request);
+            return jobOrderService.updateJobOrder(id, jobOrder, request);
         } catch (Exception e) {
             return new ResponseEntity<>(jobOrder, HttpStatus.BAD_REQUEST);
         }

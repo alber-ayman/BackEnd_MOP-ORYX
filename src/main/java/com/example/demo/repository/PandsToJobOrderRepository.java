@@ -301,6 +301,17 @@ public interface PandsToJobOrderRepository extends JpaRepository<PandsToJobOrder
     );
 
     @Query("""
+            SELECT COALESCE(SUM(p.mainQuantity), 0)
+            FROM PandsToJobOrder p
+            WHERE p.projectProfileId = :projectProfileId
+            AND p.jobOrderId = :jobOrderId
+            """)
+    Double sumMainQuantity(
+            @Param("projectProfileId") Long projectProfileId,
+            @Param("jobOrderId") String jobOrderId
+    );
+
+    @Query("""
             SELECT COALESCE(SUM(p.quantity), 0)
             FROM PandsToJobOrder p
             WHERE p.projectProfileId = :projectProfileId
@@ -372,29 +383,6 @@ public interface PandsToJobOrderRepository extends JpaRepository<PandsToJobOrder
             @Param("p_job_order_id") String jobOrderId
     );
 
-//    @Procedure(procedureName = "UpdatePandsToJobOrder")
-//    void updatePandsToJobOrder(
-//            Long p_id,
-//            String p_projectCode,
-//            String p_projectName,
-//            String p_engineerName,
-//            String p_jobOrderType,
-//            String p_manufacturingCode,
-//            String p_pandCode,
-//            String p_description,
-//            String p_manufacturing,
-//            String p_rawType,
-//            String p_rawUsed,
-//            String p_finishType,
-//            String p_thickness,
-//            String p_blockNumber,
-//            String p_floor,
-//            String p_unit,
-//            String p_additionalDescription,
-//            Double p_height,
-//            Double p_width,
-//            Double p_repetition,
-//            Double p_mainQuantity,
-//            String p_installationArea
-//    );
+
+
 }

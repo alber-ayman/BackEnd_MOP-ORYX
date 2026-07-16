@@ -109,39 +109,39 @@ public class RestQuantityForJobOrders {
             firstRow2.setCellStyle(cellStyle);
             firstRow.createCell(3).setCellValue("Pand code");
             firstRow3.setCellStyle(cellStyle);
-            firstRow.createCell(4).setCellValue("Description");
-            firstRow4.setCellStyle(cellStyle);
-            firstRow.createCell(5).setCellValue("Manufacturing");
+//            firstRow.createCell(4).setCellValue("Description");
+//            firstRow4.setCellStyle(cellStyle);
+            firstRow.createCell(4).setCellValue("Manufacturing");
             firstRow7.setCellStyle(cellStyle);
-            firstRow.createCell(6).setCellValue("Material");
+            firstRow.createCell(5).setCellValue("Material");
             firstRow8.setCellStyle(cellStyle);
-            firstRow.createCell(7).setCellValue("Material Used");
+            firstRow.createCell(6).setCellValue("Material Used");
             firstRow9.setCellStyle(cellStyle);
-            firstRow.createCell(8).setCellValue("Finishing");
+            firstRow.createCell(7).setCellValue("Finishing");
             firstRow10.setCellStyle(cellStyle);
-            firstRow.createCell(9).setCellValue("Thickness");
+            firstRow.createCell(8).setCellValue("Thickness");
             firstRow11.setCellStyle(cellStyle);
-            firstRow.createCell(10).setCellValue("Height");
-            firstRow12.setCellStyle(cellStyle);
-            firstRow.createCell(11).setCellValue("Width");
-            firstRow13.setCellStyle(cellStyle);
+//            firstRow.createCell(10).setCellValue("Height");
+//            firstRow12.setCellStyle(cellStyle);
+//            firstRow.createCell(11).setCellValue("Width");
+//            firstRow13.setCellStyle(cellStyle);
 
-            firstRow.createCell(12).setCellValue("Unit");
+            firstRow.createCell(9).setCellValue("Unit");
             firstRow6.setCellStyle(cellStyle);
 
-            firstRow.createCell(13).setCellValue("Total In Pand");
+            firstRow.createCell(10).setCellValue("Total In Pand");
             firstRow14.setCellStyle(cellStyle);
 
-            firstRow.createCell(14).setCellValue("Rest Quantity");
+            firstRow.createCell(11).setCellValue("Rest Quantity");
             firstRow5.setCellStyle(cellStyle);
 
-            firstRow.createCell(15).setCellValue("Total Job Orders");
+            firstRow.createCell(12).setCellValue("Total Job Orders");
             firstRow15.setCellStyle(cellStyle);
 
-            firstRow.createCell(16).setCellValue("Total Permit");
+            firstRow.createCell(13).setCellValue("Total Permit");
             firstRow16.setCellStyle(cellStyle);
 
-            firstRow.createCell(17).setCellValue("Rest In Job Order");
+            firstRow.createCell(14).setCellValue("Rest In Job Order");
             firstRow17.setCellStyle(cellStyle);
 
             int rowIdx = 1;
@@ -188,19 +188,19 @@ public class RestQuantityForJobOrders {
                 thickness.setCellValue(pand.getThickness());
                 thickness.setCellStyle(cellStyle);
 
-                Cell height = row.createCell(9);
-                height.setCellValue(pand.getHeight());
-                height.setCellStyle(cellStyle);
+//                Cell height = row.createCell(9);
+//                height.setCellValue(pand.getHeight());
+//                height.setCellStyle(cellStyle);
+//
+//                Cell width = row.createCell(10);
+//                width.setCellValue(pand.getWidth());
+//                width.setCellStyle(cellStyle);
 
-                Cell width = row.createCell(10);
-                width.setCellValue(pand.getWidth());
-                width.setCellStyle(cellStyle);
-
-                Cell unit = row.createCell(11);
+                Cell unit = row.createCell(9);
                 unit.setCellValue(pand.getUnit());
                 unit.setCellStyle(cellStyle);
 
-                Cell total = row.createCell(12);
+                Cell total = row.createCell(10);
                 total.setCellValue(pand.getMainQuantity());
                 total.setCellStyle(cellStyle);
 
@@ -215,21 +215,21 @@ public class RestQuantityForJobOrders {
                     restTotalAmount = 0.0;
                 }
 
-                Cell quantity = row.createCell(13);
+                Cell quantity = row.createCell(11);
                 quantity.setCellValue(pand.getTotalQuantity() - restTotalAmount);
                 quantity.setCellStyle(cellStyle);
 
-                Cell totalQuantity = row.createCell(14);
+                Cell totalQuantity = row.createCell(12);
                 totalQuantity.setCellValue(restTotalAmount);
                 totalQuantity.setCellStyle(cellStyle);
 
 
-                Cell finalProducted = row.createCell(15);
+                Cell finalProducted = row.createCell(13);
                 finalProducted.setCellValue(totalAmount);
                 finalProducted.setCellStyle(cellStyle);
 
 
-                Cell restQuantity = row.createCell(16);
+                Cell restQuantity = row.createCell(14);
                 restQuantity.setCellValue(restTotalAmount - totalAmount);
                 restQuantity.setCellStyle(cellStyle);
 
@@ -359,53 +359,53 @@ public class RestQuantityForJobOrders {
             sheet.getCells().get("E5").putValue("Thickness");
             sheet.getCells().get("E5").setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("F5").putValue("Height");
+//            sheet.getCells().get("F5").putValue("Height");
+//            sheet.getCells().get("F5").setStyle(tableHeaderStyle);
+//
+//            sheet.getCells().get("G5").putValue("Width");
+//            sheet.getCells().get("G5").setStyle(tableHeaderStyle);
+
+            sheet.getCells().get("F5").putValue("Unit");
             sheet.getCells().get("F5").setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("G5").putValue("Width");
+            sheet.getCells().get("G5").putValue("Total In Pand");
             sheet.getCells().get("G5").setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("H5").putValue("Unit");
+            sheet.getCells().get("H5").putValue("Rest Quantity");
             sheet.getCells().get("H5").setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("I5").putValue("Total In Pand");
+            sheet.getCells().get("I5").putValue("Total Work Orders");
             sheet.getCells().get("I5").setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("J5").putValue("Rest Quantity");
+            sheet.getCells().get("J5").putValue("Total Permit");
             sheet.getCells().get("J5").setStyle(tableHeaderStyle);
 
-            sheet.getCells().get("K5").putValue("Total Job Orders");
+            sheet.getCells().get("K5").putValue("Rest In Work Order");
             sheet.getCells().get("K5").setStyle(tableHeaderStyle);
-
-            sheet.getCells().get("L5").putValue("Total Permit");
-            sheet.getCells().get("L5").setStyle(tableHeaderStyle);
-
-            sheet.getCells().get("M5").putValue("Rest In Job Order");
-            sheet.getCells().get("M5").setStyle(tableHeaderStyle);
 
             InputStream imageStream = new ClassPathResource("static/ORYX.jpeg").getInputStream();
 
             // Add the image to the worksheet (X, Y coordinates in pixels)
             // Place the image inside the merged cells (A1:C5)
-            int pictureIndex = sheet.getPictures().add(0, 11, imageStream);
+            int pictureIndex = sheet.getPictures().add(0, 8, imageStream);
 
             // Get the added picture
             Picture picture = sheet.getPictures().get(pictureIndex);
 
             // Optionally, set the picture to fit within the merged area
             picture.setPlacement(PlacementType.MOVE);
-            picture.setWidthScale(40); // Scale the image to fit width
-            picture.setHeightScale(20);
+            picture.setWidthScale(80); // Scale the image to fit width
+            picture.setHeightScale(40);
 
             Cells cells = sheet.getCells();
-            cells.merge(1, 7, 2, 3);
+            cells.merge(1, 4, 2, 3);
 
             // Assign a value to the merged cell
 //        cells.get(3, 4).setValue("اجمالى الكميات بالوحدات");
 //        sheet.getCells().get("E3").setStyle(titleStyle);
 
-            com.aspose.cells.Cell mergedCell = cells.get(1, 7);
-            mergedCell.setValue("Job Orders Balance");
+            com.aspose.cells.Cell mergedCell = cells.get(1, 4);
+            mergedCell.setValue("Work Orders Balance");
 
             // Modify the style to set font size to 16
             Style style = mergedCell.getStyle();
@@ -463,32 +463,32 @@ public class RestQuantityForJobOrders {
                 }
 
 
-                sheet.getCells().get("F" + rowIdx).putValue(pand.getHeight());
+//                sheet.getCells().get("F" + rowIdx).putValue(pand.getHeight());
+//                if (rowIdx % 2 != 0) {
+//                    sheet.getCells().get("F" + rowIdx).setStyle(shadowStyle);
+//                } else {
+//                    sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
+//                }
+//
+//                sheet.getCells().get("G" + rowIdx).putValue(pand.getWidth());
+//                if (rowIdx % 2 != 0) {
+//                    sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
+//                } else {
+//                    sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
+//                }
+
+                sheet.getCells().get("F" + rowIdx).putValue(pand.getUnit());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("F" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("G" + rowIdx).putValue(pand.getWidth());
+                sheet.getCells().get("G" + rowIdx).putValue(pand.getTotalQuantity());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
-                }
-
-                sheet.getCells().get("H" + rowIdx).putValue(pand.getUnit());
-                if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("H" + rowIdx).setStyle(shadowStyle);
-                } else {
-                    sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
-                }
-
-                sheet.getCells().get("I" + rowIdx).putValue(pand.getMainQuantity());
-                if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
-                } else {
-                    sheet.getCells().get("I" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
                 Double restTotalAmount = pandsToJobOrderRepository.sumMainTotalByPandCode(pand.getProjectProfileId(), pand.getPandCode());
@@ -497,18 +497,18 @@ public class RestQuantityForJobOrders {
                     restTotalAmount = 0.0;
                 }
 
-                sheet.getCells().get("J" + rowIdx).putValue(pand.getMainQuantity() - restTotalAmount);
+                sheet.getCells().get("H" + rowIdx).putValue(pand.getTotalQuantity() - restTotalAmount);
                 if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("J" + rowIdx).setStyle(shadowStyle);
+                    sheet.getCells().get("H" + rowIdx).setStyle(shadowStyle);
                 } else {
-                    sheet.getCells().get("J" + rowIdx).setStyle(discriptionDataStyle);
+                    sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("K" + rowIdx).putValue(restTotalAmount);
+                sheet.getCells().get("I" + rowIdx).putValue(restTotalAmount);
                 if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("K" + rowIdx).setStyle(shadowStyle);
+                    sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
                 } else {
-                    sheet.getCells().get("K" + rowIdx).setStyle(discriptionDataStyle);
+                    sheet.getCells().get("I" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
                 Double totalAmount = exitJobOrderRepository.sumTotalByPandCode(pand.getProjectCode(), pand.getPandCode());
@@ -517,22 +517,22 @@ public class RestQuantityForJobOrders {
                     totalAmount = 0.0;
                 }
 
-                sheet.getCells().get("L" + rowIdx).putValue(totalAmount);
+                sheet.getCells().get("J" + rowIdx).putValue(totalAmount);
                 if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("L" + rowIdx).setStyle(shadowStyle);
+                    sheet.getCells().get("J" + rowIdx).setStyle(shadowStyle);
                 } else {
-                    sheet.getCells().get("L" + rowIdx).setStyle(discriptionDataStyle);
+                    sheet.getCells().get("J" + rowIdx).setStyle(discriptionDataStyle);
                 }
                 DecimalFormat df = new DecimalFormat("#.###");
                 String rTA = df.format(restTotalAmount);
 
                 String tA = df.format(totalAmount);
 
-                sheet.getCells().get("M" + rowIdx).putValue(Double.parseDouble(rTA) - Double.parseDouble(tA));
+                sheet.getCells().get("K" + rowIdx).putValue(Double.parseDouble(rTA) - Double.parseDouble(tA));
                 if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("M" + rowIdx).setStyle(shadowStyle);
+                    sheet.getCells().get("K" + rowIdx).setStyle(shadowStyle);
                 } else {
-                    sheet.getCells().get("M" + rowIdx).setStyle(discriptionDataStyle);
+                    sheet.getCells().get("K" + rowIdx).setStyle(discriptionDataStyle);
                 }
                 rowIdx++;
             }

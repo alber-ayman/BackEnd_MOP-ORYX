@@ -6,8 +6,11 @@ import com.example.demo.service.store.ExportSuppliesDetailsService;
 import com.example.demo.service.store.SupplySerialService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.rest.webmvc.ResourceNotFoundException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -158,6 +161,17 @@ public class ExportSuppliesDetailsController {
             e.printStackTrace();
             return null;
         }
+    }
+
+    @PostMapping("/generate/suppliesFile")
+    public ResponseEntity<InputStreamResource> generateExcelToPdf(@RequestParam(name = "supplyNumber") String id) throws Exception {
+        // 1. Create an Excel workbook in memory
+        InputStreamResource pdfBytes = suppliesDetailsService.getPdf(id);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=converted.pdf")
+                .contentType(MediaType.APPLICATION_PDF)
+                .body(pdfBytes);
     }
 
 }

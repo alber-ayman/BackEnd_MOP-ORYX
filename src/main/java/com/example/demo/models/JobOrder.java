@@ -94,4 +94,8 @@ public class JobOrder {
 
     private String engineerName;
 
+    private int status;
+
+    private String statusName;
+
 }

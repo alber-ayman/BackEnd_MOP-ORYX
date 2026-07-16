@@ -380,52 +380,52 @@ public class RestQuantityForRaws {
         sheet.getCells().get("E5").putValue("Thickness");
         sheet.getCells().get("E5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("F5").putValue("Height");
+//        sheet.getCells().get("F5").putValue("Height");
+//        sheet.getCells().get("F5").setStyle(tableHeaderStyle);
+//
+//        sheet.getCells().get("G5").putValue("Width");
+//        sheet.getCells().get("G5").setStyle(tableHeaderStyle);
+
+        sheet.getCells().get("F5").putValue("Unit");
         sheet.getCells().get("F5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("G5").putValue("Width");
+        sheet.getCells().get("G5").putValue("Quantity");
         sheet.getCells().get("G5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("H5").putValue("Unit");
+        sheet.getCells().get("H5").putValue("Rest Quantity");
         sheet.getCells().get("H5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("I5").putValue("Quantity");
+        sheet.getCells().get("I5").putValue("Total Work Order");
         sheet.getCells().get("I5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("J5").putValue("Rest Quantity");
+        sheet.getCells().get("J5").putValue("Total Permit");
         sheet.getCells().get("J5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("K5").putValue("Total Job Order");
+        sheet.getCells().get("K5").putValue("Rest In Work Order");
         sheet.getCells().get("K5").setStyle(tableHeaderStyle);
-
-        sheet.getCells().get("L5").putValue("Total Permit");
-        sheet.getCells().get("L5").setStyle(tableHeaderStyle);
-
-        sheet.getCells().get("M5").putValue("Rest In Job Order");
-        sheet.getCells().get("M5").setStyle(tableHeaderStyle);
 
         InputStream imageStream = new ClassPathResource("static/ORYX.jpeg").getInputStream();
 
         // Add the image to the worksheet (X, Y coordinates in pixels)
         // Place the image inside the merged cells (A1:C5)
-        int pictureIndex = sheet.getPictures().add(0, 11, imageStream);
+        int pictureIndex = sheet.getPictures().add(0, 8, imageStream);
 
         // Get the added picture
         Picture picture = sheet.getPictures().get(pictureIndex);
 
         // Optionally, set the picture to fit within the merged area
         picture.setPlacement(PlacementType.MOVE);
-        picture.setWidthScale(40); // Scale the image to fit width
-        picture.setHeightScale(20);
+        picture.setWidthScale(80); // Scale the image to fit width
+        picture.setHeightScale(40);
 
         Cells cells = sheet.getCells();
-        cells.merge(1, 7, 2, 4);
+        cells.merge(1, 4, 2, 4);
 
         // Assign a value to the merged cell
 //        cells.get(3, 4).setValue("اجمالى الكميات بالوحدات");
 //        sheet.getCells().get("E3").setStyle(titleStyle);
 
-        com.aspose.cells.Cell mergedCell = cells.get(1, 7);
+        com.aspose.cells.Cell mergedCell = cells.get(1, 4);
         mergedCell.setValue("Rest Quantity By Material");
 
         // Modify the style to set font size to 16
@@ -515,41 +515,41 @@ public class RestQuantityForRaws {
                 }
 
 
-                sheet.getCells().get("F" + rowIdx).putValue(pands.get(i).getHeight());
+//                sheet.getCells().get("F" + rowIdx).putValue(pands.get(i).getHeight());
+//                if (rowIdx % 2 != 0) {
+//                    sheet.getCells().get("F" + rowIdx).setStyle(shadowStyle);
+//                } else {
+//                    sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
+//                }
+//
+//                sheet.getCells().get("G" + rowIdx).putValue(pands.get(i).getWidth());
+//                if (rowIdx % 2 != 0) {
+//                    sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
+//                } else {
+//                    sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
+//                }
+
+                sheet.getCells().get("F" + rowIdx).putValue(pands.get(i).getUnit());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("F" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("G" + rowIdx).putValue(pands.get(i).getWidth());
+                sheet.getCells().get("G" + rowIdx).putValue(pands.get(i).getTotalQuantity());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
-                sheet.getCells().get("H" + rowIdx).putValue(pands.get(i).getUnit());
+                result1 += pands.get(i).getTotalQuantity();
+
+                sheet.getCells().get("H" + rowIdx).putValue(pands.get(i).getRestQuantity());
                 if (rowIdx % 2 != 0) {
                     sheet.getCells().get("H" + rowIdx).setStyle(shadowStyle);
                 } else {
                     sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
-                }
-
-                sheet.getCells().get("I" + rowIdx).putValue(pands.get(i).getMainQuantity());
-                if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
-                } else {
-                    sheet.getCells().get("I" + rowIdx).setStyle(discriptionDataStyle);
-                }
-
-                result1 += pands.get(i).getMainQuantity();
-
-                sheet.getCells().get("J" + rowIdx).putValue(pands.get(i).getRestQuantity());
-                if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("J" + rowIdx).setStyle(shadowStyle);
-                } else {
-                    sheet.getCells().get("J" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
                 result2 += pands.get(i).getRestQuantity();
@@ -560,11 +560,11 @@ public class RestQuantityForRaws {
                     restTotalAmount = 0.0;
                 }
 
-                sheet.getCells().get("K" + rowIdx).putValue(restTotalAmount);
+                sheet.getCells().get("I" + rowIdx).putValue(restTotalAmount);
                 if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("K" + rowIdx).setStyle(shadowStyle);
+                    sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
                 } else {
-                    sheet.getCells().get("K" + rowIdx).setStyle(discriptionDataStyle);
+                    sheet.getCells().get("I" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
                 result3 += restTotalAmount;
@@ -575,20 +575,20 @@ public class RestQuantityForRaws {
                     totalAmount = 0.0;
                 }
 
-                sheet.getCells().get("L" + rowIdx).putValue(totalAmount);
+                sheet.getCells().get("J" + rowIdx).putValue(totalAmount);
                 if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("L" + rowIdx).setStyle(shadowStyle);
+                    sheet.getCells().get("J" + rowIdx).setStyle(shadowStyle);
                 } else {
-                    sheet.getCells().get("L" + rowIdx).setStyle(discriptionDataStyle);
+                    sheet.getCells().get("J" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
                 result4 += totalAmount;
 
-                sheet.getCells().get("M" + rowIdx).putValue(restTotalAmount - totalAmount);
+                sheet.getCells().get("K" + rowIdx).putValue(restTotalAmount - totalAmount);
                 if (rowIdx % 2 != 0) {
-                    sheet.getCells().get("M" + rowIdx).setStyle(shadowStyle);
+                    sheet.getCells().get("K" + rowIdx).setStyle(shadowStyle);
                 } else {
-                    sheet.getCells().get("M" + rowIdx).setStyle(discriptionDataStyle);
+                    sheet.getCells().get("K" + rowIdx).setStyle(discriptionDataStyle);
                 }
 
                 result5 += (restTotalAmount - totalAmount);
@@ -597,35 +597,35 @@ public class RestQuantityForRaws {
 
             }
 
-            sheet.getCells().get("I" + rowIdx).putValue(result1);
+            sheet.getCells().get("G" + rowIdx).putValue(result1);
+            if (rowIdx % 2 != 0) {
+                sheet.getCells().get("G" + rowIdx).setStyle(shadowStyle);
+            } else {
+                sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
+            }
+            sheet.getCells().get("H" + rowIdx).putValue(result2);
+            if (rowIdx % 2 != 0) {
+                sheet.getCells().get("H" + rowIdx).setStyle(shadowStyle);
+            } else {
+                sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
+            }
+            sheet.getCells().get("I" + rowIdx).putValue(result3);
             if (rowIdx % 2 != 0) {
                 sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
             } else {
                 sheet.getCells().get("I" + rowIdx).setStyle(discriptionDataStyle);
             }
-            sheet.getCells().get("J" + rowIdx).putValue(result2);
+            sheet.getCells().get("J" + rowIdx).putValue(result4);
             if (rowIdx % 2 != 0) {
                 sheet.getCells().get("J" + rowIdx).setStyle(shadowStyle);
             } else {
                 sheet.getCells().get("J" + rowIdx).setStyle(discriptionDataStyle);
             }
-            sheet.getCells().get("K" + rowIdx).putValue(result3);
+            sheet.getCells().get("K" + rowIdx).putValue(result5);
             if (rowIdx % 2 != 0) {
                 sheet.getCells().get("K" + rowIdx).setStyle(shadowStyle);
             } else {
                 sheet.getCells().get("K" + rowIdx).setStyle(discriptionDataStyle);
-            }
-            sheet.getCells().get("L" + rowIdx).putValue(result4);
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("L" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("L" + rowIdx).setStyle(discriptionDataStyle);
-            }
-            sheet.getCells().get("M" + rowIdx).putValue(result5);
-            if (rowIdx % 2 != 0) {
-                sheet.getCells().get("M" + rowIdx).setStyle(shadowStyle);
-            } else {
-                sheet.getCells().get("M" + rowIdx).setStyle(discriptionDataStyle);
             }
 
             rowIdx += 2;

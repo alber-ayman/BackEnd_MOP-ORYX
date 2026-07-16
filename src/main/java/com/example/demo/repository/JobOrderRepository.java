@@ -1,7 +1,6 @@
 package com.example.demo.repository;
 
 import com.example.demo.models.JobOrder;
-import com.example.demo.models.PandsToJobOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -57,4 +56,50 @@ public interface JobOrderRepository extends JpaRepository<JobOrder,Long> {
 
     @Query(value = "SELECT * FROM job_order order BY project_code asc", nativeQuery = true)
     List<JobOrder> FindAllGroupByProject();
+
+    @Query(value = """
+    SELECT *
+    FROM job_order
+    WHERE project_profile_id = :projectId
+      AND job_order_date >= :fromDate
+      AND job_order_date <= :toDate
+    ORDER BY project_profile_id DESC
+    """, nativeQuery = true)
+    List<JobOrder> findByProjectProfileIdByDate(
+            @Param("projectId") Long projectId,
+            @Param("fromDate") String fromDate,
+            @Param("toDate") String toDate);
+
+    @Query(value = """
+    SELECT *
+    FROM job_order
+    WHERE project_profile_id = :projectId
+      AND job_order_date >= :fromDate
+      AND job_order_date <= :toDate
+      AND status = :status
+    ORDER BY project_profile_id DESC
+    """, nativeQuery = true)
+    List<JobOrder> findByProjectAndDateAndPercentageStatus(@Param("projectId") Long projectId,
+                                                 @Param("fromDate") String fromDate,
+                                                 @Param("toDate") String toDate,
+                                                 @Param("status") String status);
+
+    @Query(value = """
+    SELECT *
+    FROM job_order
+    WHERE job_order_date >= :fromDate
+      AND job_order_date <= :toDate
+    ORDER BY project_profile_id DESC
+    """, nativeQuery = true)
+    List<JobOrder> findByAllProjectProfileIdByDate(String from, String to);
+
+    @Query(value = """
+    SELECT *
+    FROM job_order
+    WHERE job_order_date >= :fromDate
+      AND job_order_date <= :toDate
+      AND status = :status
+    ORDER BY project_profile_id DESC
+    """, nativeQuery = true)
+    List<JobOrder> findByAllProjectAndDateAndPercentageStatus(String from, String to, String status);
 }

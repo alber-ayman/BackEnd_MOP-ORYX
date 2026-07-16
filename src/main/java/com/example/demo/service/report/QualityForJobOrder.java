@@ -295,38 +295,38 @@ public class QualityForJobOrder {
         shadowStyle.setHorizontalAlignment(TextAlignmentType.CENTER);
         shadowStyle.getFont().setSize(11);
 
-        sheet.getCells().get("A5").putValue("Pand Code");
-        sheet.getCells().get("A5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("A6").putValue("Pand Code");
+        sheet.getCells().get("A6").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("B5").putValue("Description");
-        sheet.getCells().get("B5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("B6").putValue("Description");
+        sheet.getCells().get("B6").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("C5").putValue("Material");
-        sheet.getCells().get("C5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("C6").putValue("Material");
+        sheet.getCells().get("C6").setStyle(tableHeaderStyle);
 
 //        sheet.getCells().get("D5").putValue("Material used");
 //        sheet.getCells().get("D5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("D5").putValue("Finishing");
-        sheet.getCells().get("D5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("D6").putValue("Finishing");
+        sheet.getCells().get("D6").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("E5").putValue("Thickness");
-        sheet.getCells().get("E5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("E6").putValue("Thickness");
+        sheet.getCells().get("E6").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("F5").putValue("Height");
-        sheet.getCells().get("F5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("F6").putValue("Height");
+        sheet.getCells().get("F6").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("G5").putValue("Width");
-        sheet.getCells().get("G5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("G6").putValue("Width");
+        sheet.getCells().get("G6").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("H5").putValue("Unit");
-        sheet.getCells().get("H5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("H6").putValue("Unit");
+        sheet.getCells().get("H6").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("I5").putValue("Total Permit");
-        sheet.getCells().get("I5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("I6").putValue("Total Permit");
+        sheet.getCells().get("I6").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("J5").putValue("Total Used Material");
-        sheet.getCells().get("J5").setStyle(tableHeaderStyle);
+        sheet.getCells().get("J6").putValue("Total Used Material");
+        sheet.getCells().get("J6").setStyle(tableHeaderStyle);
 
         InputStream imageStream = new ClassPathResource("static/ORYX.jpeg").getInputStream();
 
@@ -339,17 +339,17 @@ public class QualityForJobOrder {
 
         // Optionally, set the picture to fit within the merged area
         picture.setPlacement(PlacementType.MOVE);
-        picture.setWidthScale(40); // Scale the image to fit width
-        picture.setHeightScale(20);
+        picture.setWidthScale(60); // Scale the image to fit width
+        picture.setHeightScale(40);
 
         Cells cells = sheet.getCells();
-        cells.merge(2, 4, 2, 3);
+        cells.merge(2, 3, 2, 3);
 
         // Assign a value to the merged cell
 //        cells.get(3, 4).setValue("اجمالى الكميات بالوحدات");
 //        sheet.getCells().get("E3").setStyle(titleStyle);
 
-        com.aspose.cells.Cell mergedCell = cells.get(2, 4);
+        com.aspose.cells.Cell mergedCell = cells.get(2, 3);
         mergedCell.setValue("Used Material Analysis");
 
         // Modify the style to set font size to 16
@@ -358,7 +358,7 @@ public class QualityForJobOrder {
         font.setSize(15);
         mergedCell.setStyle(style);
 
-        int rowIdx = 7;
+        int rowIdx = 8;
 
         for (String rawType : rawTypes) {
 

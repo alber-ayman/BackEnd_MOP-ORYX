@@ -236,19 +236,19 @@ public class SuppliesDetailsService {
         sheet.getCells().get("A1").putValue("Supplier Name");
         sheet.getCells().get("A1").setStyle(discriptionDataStyle);
 
-        sheet.getCells().get("B1").putValue(supplyDetails.get(0).getSupplierName());
+        sheet.getCells().get("B1").putValue(supplyDetails.getFirst().getSupplierName());
         sheet.getCells().get("B1").setStyle(discriptionDataStyle);
 
         sheet.getCells().get("C1").putValue("Supplier Code");
         sheet.getCells().get("C1").setStyle(discriptionDataStyle);
 
-        sheet.getCells().get("D1").putValue(supplyDetails.get(0).getSupplierCode());
+        sheet.getCells().get("D1").putValue(supplyDetails.getFirst().getSupplierCode());
         sheet.getCells().get("D1").setStyle(discriptionDataStyle);
 
         sheet.getCells().get("A3").putValue("Store Officer");
         sheet.getCells().get("A3").setStyle(discriptionDataStyle);
 
-        sheet.getCells().get("B3").putValue(supplyDetails.get(0).getStoreOfficer());
+        sheet.getCells().get("B3").putValue(supplyDetails.getFirst().getStoreOfficer());
         sheet.getCells().get("B3").setStyle(discriptionDataStyle);
 
         sheet.getCells().get("C3").putValue("Supply Number");
@@ -260,7 +260,7 @@ public class SuppliesDetailsService {
         sheet.getCells().get("A5").putValue("Date: ");
         sheet.getCells().get("A5").setStyle(discriptionDataStyle);
 
-        sheet.getCells().get("B5").putValue(supplyDetails.get(0).getData() + " " + supplyDetails.get(0).getTime());
+        sheet.getCells().get("B5").putValue(supplyDetails.getFirst().getData() + " " + supplyDetails.getFirst().getTime());
         sheet.getCells().get("B5").setStyle(discriptionDataStyle);
 
         InputStream imageStream = new ClassPathResource("static/ORYX.jpeg").getInputStream();

@@ -541,7 +541,6 @@ public class PandsToJobOrderService {
             System.out.println(actualPandsToJobOrder.size());
             DecimalFormat df = new DecimalFormat("#.###");
             for (int i = 0; i < actualPandsToJobOrder.size(); i++) {
-                System.out.println("actualPandsToJobOrder: " + i);
                 Optional<PandsToJobOrder> pandsToJobOrder = pandsToJobOrderRepository.findByUniqueIdAndJobOrderIdAndWidthAndHeight(actualPandsToJobOrder.get(i).getUniqueId()
                         , actualPandsToJobOrder.get(i).getJobOrderId(), actualPandsToJobOrder.get(i).getWidth(), actualPandsToJobOrder.get(i).getHeight());
                 pandsToJobOrder.get().setQuantity(pandsToJobOrder.get().getQuantity() + actualPandsToJobOrder.get(i).getQuantity());
@@ -1034,6 +1033,21 @@ public class PandsToJobOrderService {
             cells.get("K" + rowIdx).setStyle(rowStyle);
 
             rowIdx++;
+        }
+        rowIdx+=3;
+        if(jobOrder.getImage() != null) {
+
+            byte[] imageBytes = jobOrder.getImage();
+
+            ByteArrayInputStream imageStream2 = new ByteArrayInputStream(imageBytes);
+
+            // Add image to the sheet (at cell A1)
+            int pictureIndex2 = sheet.getPictures().add(rowIdx, 3, imageStream2);
+            Picture picture2 = sheet.getPictures().get(pictureIndex2);
+
+            // Optional: Resize or position the image
+//            picture2.setWidthScale(50); // Scale the image to fit width
+//            picture2.setHeightScale(50);
         }
 
         AutoFitterOptions options = new AutoFitterOptions();
@@ -1987,7 +2001,7 @@ public class PandsToJobOrderService {
 
     private List<PandsToJobOrder> mapTopandsToJobOrder(MarbleItemRequestDto marbleItemDtos) {
 
-        double totalQuantity = 0;
+
 
         List<String> distinctPands = marbleItemDtos.getItems().stream()
                 .map(MarbleItemDto::getPandCode)   // extract the unit field
@@ -1996,14 +2010,17 @@ public class PandsToJobOrderService {
                 .toList();
 
         for (String distinctPand : distinctPands) {
+            double totalQuantity = 0;
             double restQuantity = pandsRepository.findRestQuantityByPandCodeAndProjectProfileId(distinctPand, marbleItemDtos.getProjectProfileId());
             for (MarbleItemDto marbleItemDto : marbleItemDtos.getItems()) {
                 if (marbleItemDto.getPandCode().equals(distinctPand)) {
+                    System.out.println("marbleItemDto.getTotal(): " + marbleItemDto.getTotal());
                     totalQuantity += marbleItemDto.getTotal();
                 }
             }
 
             if (totalQuantity > restQuantity) {
+                System.out.println(distinctPand + " : " +totalQuantity + " : " + restQuantity);
                 List<PandsToJobOrder> pandsToJobOrders = new ArrayList<>();
                 PandsToJobOrder pandsToJobOrder1 = new PandsToJobOrder();
                 pandsToJobOrder1.setFlag(1);
@@ -2013,19 +2030,6 @@ public class PandsToJobOrderService {
             }
         }
         DecimalFormat df = new DecimalFormat("#.###");
-        for (String distinctPand : distinctPands) {
-            totalQuantity = 0;
-            double restQuantity = pandsRepository.findRestQuantityByPandCodeAndProjectProfileId(distinctPand, marbleItemDtos.getProjectProfileId());
-            for (MarbleItemDto marbleItemDto : marbleItemDtos.getItems()) {
-                if (marbleItemDto.getPandCode().equals(distinctPand)) {
-                    totalQuantity += Double.parseDouble(String.valueOf(marbleItemDto.getTotal()));
-                }
-            }
-            Pand pand = pandsService.getPandByPandCode(distinctPand, marbleItemDtos.getProjectProfileId());
-
-            pand.setRestQuantity(Double.parseDouble(df.format(restQuantity - totalQuantity)));
-            pandsRepository.save(pand);
-        }
 
         List<PandsToJobOrder> pandsToJobOrderList = new ArrayList<>();
 
@@ -2035,6 +2039,10 @@ public class PandsToJobOrderService {
 //        Integer number = jobOrderService.getTheMaxNumber(marbleItemDtos.getFirst().getProjectProfileId());
         GregorianCalendar gcalendar = new GregorianCalendar();
         Integer number = jobOrderRepository.findMaxNumber(marbleItemDtos.getProjectProfileId());
+
+        if(number == null){
+            number = 0;
+        }
 
         int nextNumber = number + 1;
 
@@ -2091,6 +2099,21 @@ public class PandsToJobOrderService {
 //            pandsToJobOrderRepository.save(pandsToJobOrder);
 
         }
+
+        for (String distinctPand : distinctPands) {
+           double totalQuantity = 0;
+            double restQuantity = pandsRepository.findRestQuantityByPandCodeAndProjectProfileId(distinctPand, marbleItemDtos.getProjectProfileId());
+            for (MarbleItemDto marbleItemDto : marbleItemDtos.getItems()) {
+                if (marbleItemDto.getPandCode().equals(distinctPand)) {
+                    totalQuantity += Double.parseDouble(String.valueOf(marbleItemDto.getTotal()));
+                }
+            }
+            Pand pand = pandsService.getPandByPandCode(distinctPand, marbleItemDtos.getProjectProfileId());
+
+            pand.setRestQuantity(Double.parseDouble(df.format(restQuantity - totalQuantity)));
+            pandsRepository.save(pand);
+        }
+
         return pandsToJobOrderList;
     }
 }

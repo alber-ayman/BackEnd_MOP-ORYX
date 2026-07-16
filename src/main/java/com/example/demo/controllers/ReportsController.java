@@ -1,9 +1,6 @@
 package com.example.demo.controllers;
 
-import com.example.demo.service.report.QualityForJobOrder;
-import com.example.demo.service.report.RestQuantityForJobOrders;
-import com.example.demo.service.report.RestQuantityForRaws;
-import com.example.demo.service.report.RestQuantityInPandsService;
+import com.example.demo.service.report.*;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.poi.util.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,12 +33,18 @@ public class ReportsController {
     @Autowired
     QualityForJobOrder qualityForJobOrder;
 
+    @Autowired
+    WorkOrderAnalysis workOrdersAnalysis;
+
 
     @GetMapping("/download/{id}/{flag}")
     @PreAuthorize("hasRole('ADMIN')")
     public void downLoadExcel(HttpServletResponse response,
                               @PathVariable(value = "id") Long id,
-                              @PathVariable(value = "flag") int flag) throws SQLException, IOException {
+                              @PathVariable(value = "flag") int flag,
+                              @RequestParam(required = false) String fromDate,
+                              @RequestParam(required = false) String toDate,
+                              @RequestParam(required = false) String status) throws SQLException, IOException {
         try {
             String filename = "";
             ByteArrayInputStream inputStream = null;
@@ -54,9 +57,12 @@ public class ReportsController {
             } else if (flag == 3) {
                 filename = "/RestQuantityForPands" + ".xls";
                 inputStream = restQuantityForRaws.buildReport(id); // الخامات
-            } else {
+            } else if (flag == 4){
                 filename = "/Quantity Used" + ".xls";
                 inputStream = qualityForJobOrder.buildReport(id); // كميه الخامات المستخدمة
+            }else{
+                filename = "/Work Orders Analysis" + ".xls";
+//                inputStream = workOrdersAnalysis.buildReport(id);
             }
 
             response.setContentType("application/octet-stream");
@@ -67,11 +73,14 @@ public class ReportsController {
     }
 
 
-    @PostMapping("/downloadPDF/{id}/{flag}")
+    @GetMapping("/downloadPDF/{id}/{flag}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<InputStreamResource> downLoadPdf(HttpServletResponse response,
                                                            @PathVariable(value = "id") Long id,
-                                                           @PathVariable(value = "flag") int flag) throws SQLException, IOException {
+                                                           @PathVariable(value = "flag") int flag,
+                                                           @RequestParam(required = false) String fromDate,
+                                                           @RequestParam(required = false) String toDate,
+                                                           @RequestParam(required = false) String status) {
         try {
             InputStreamResource pdfBytes = null;
             if (flag == 1) {
@@ -80,8 +89,10 @@ public class ReportsController {
                 pdfBytes = restQuantityForJobOrders.getPdf(id); // 2*1
             } else if (flag == 3) {
                 pdfBytes = restQuantityForRaws.getPdf(id); // الخامات
-            } else {
-                pdfBytes = qualityForJobOrder.getPdf(id);  // كميه الخامات المستخدمة
+            } else if (flag == 4){
+                pdfBytes = qualityForJobOrder.getPdf(id); // كميه الخامات المستخدمة
+            }else{
+                pdfBytes = workOrdersAnalysis.getPdf(id, fromDate, toDate, status);
             }
 
             return ResponseEntity.ok()

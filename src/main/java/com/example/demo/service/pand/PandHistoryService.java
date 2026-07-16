@@ -3,7 +3,10 @@ package com.example.demo.service.pand;
 import com.example.demo.models.*;
 import com.example.demo.repository.*;
 import com.example.demo.service.ChangeHistoryLog;
+import com.example.demo.service.workOrder.PandsToJobOrderService;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +20,8 @@ import java.util.Optional;
 
 @Service
 public class PandHistoryService {
+
+    private static final Logger logger = LoggerFactory.getLogger(PandHistoryService.class);
     @Autowired
     PandHistoryRepository pandHistoryRepository;
 
@@ -29,8 +34,6 @@ public class PandHistoryService {
     @Autowired
     private ChangeHistoryLog changeHistoryLog;
 
-    @Autowired
-    RawTypeRepository rawTypeRepository;
 
     public ResponseEntity<List<PandHistory>> getAllPandHistory(Long id) {
         List<PandHistory> pandHistories = pandHistoryRepository.getByPandId(id);
@@ -48,7 +51,7 @@ public class PandHistoryService {
             LocalDateTime myDateObj = LocalDateTime.now();
             DateTimeFormatter myFormatObj = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
             String formattedDate = myDateObj.format(myFormatObj);
-            mainQuantity = Double.valueOf(df.format(pand.get().getTotalQuantity() + pandHistory.getAdditionalQuantity()));
+            mainQuantity = Double.parseDouble(df.format(pand.get().getTotalQuantity() + pandHistory.getAdditionalQuantity()));
             pand.get().setTotalQuantity(mainQuantity);
             pandHistory.setAdditionalQuantityDate(formattedDate);
             pandHistory.setPandCode(pand.get().getPandCode());
@@ -58,18 +61,18 @@ public class PandHistoryService {
             List<PandsToJobOrder> pandsToJobOrders = pandsToJobOrderRepository.findByPandCodeAndProjectCode(pand.get().getPandCode(), pand.get().getProjectCode());
             double total = 0.0;
 
-            for (int i = 0; i < pandsToJobOrders.size(); i++) {
-                total += Double.valueOf(pandsToJobOrders.get(i).getMainTotal());
-                pandsToJobOrders.get(i).setQuantityInPand(mainQuantity - total);
-                pandsToJobOrderRepository.save(pandsToJobOrders.get(i));
+            for (PandsToJobOrder pandsToJobOrder : pandsToJobOrders) {
+                total += Double.parseDouble(pandsToJobOrder.getMainTotal());
+                pandsToJobOrder.setQuantityInPand(mainQuantity - total);
+                pandsToJobOrderRepository.save(pandsToJobOrder);
             }
             String formattedNumber = df.format(mainQuantity - total);
-            pand.get().setRestQuantity(Double.valueOf(formattedNumber));
+            pand.get().setRestQuantity(Double.parseDouble(formattedNumber));
             pand.get().setTotalPrice(String.valueOf(mainQuantity*pand.get().getPrice()));
-
+            pandsRepository.save(pand.get());
             return new ResponseEntity<>(pandHistoryRepository.save(pandHistory), HttpStatus.OK);
         }catch (Exception e){
-            e.printStackTrace();
+            logger.error("Error while processing return JobOrder",e);
             return new ResponseEntity<>(pandHistory, HttpStatus.EXPECTATION_FAILED);
         }
     }
@@ -86,7 +89,7 @@ public class PandHistoryService {
                 if (pandHistory.get().getAdditionalQuantity() > updatedPandHistory.getAdditionalQuantity()) {
                     pand.get().setRestQuantity(pand.get().getRestQuantity() - diffValue);
                     pand.get().setMockQuantity(pand.get().getMockQuantity() - diffValue);
-                    mainQuantity = Double.valueOf(df.format(pand.get().getTotalQuantity() - diffValue));
+                    mainQuantity = Double.parseDouble(df.format(pand.get().getTotalQuantity() - diffValue));
                     pand.get().setTotalQuantity(mainQuantity);
                 } else {
                     if (diffValue < 0) {
@@ -94,7 +97,7 @@ public class PandHistoryService {
                     }
                     pand.get().setRestQuantity(pand.get().getRestQuantity() + diffValue);
                     pand.get().setMockQuantity(pand.get().getMockQuantity() + diffValue);
-                    mainQuantity = Double.valueOf(df.format(pand.get().getTotalQuantity() + diffValue));
+                    mainQuantity = Double.parseDouble(df.format(pand.get().getTotalQuantity() + diffValue));
                     pand.get().setTotalQuantity(mainQuantity);
                 }
                 pand.get().setTotalPrice(String.valueOf(mainQuantity * pand.get().getPrice()));
@@ -112,7 +115,7 @@ public class PandHistoryService {
                 double total = 0.0;
 
                 for (int i = 0; i < pandsToJobOrders.size(); i++) {
-                    total += Double.valueOf(pandsToJobOrders.get(i).getMainTotal());
+                    total += Double.parseDouble(pandsToJobOrders.get(i).getMainTotal());
                     pandsToJobOrders.get(i).setQuantityInPand(mainQuantity - total);
                     pandsToJobOrderRepository.save(pandsToJobOrders.get(i));
                 }
@@ -120,7 +123,7 @@ public class PandHistoryService {
             }
             return new ResponseEntity<>(pandHistory.get(), HttpStatus.OK);
         }catch (Exception e){
-            e.printStackTrace();
+            logger.error("Error while processing return JobOrder",e);
             return new ResponseEntity<>(updatedPandHistory, HttpStatus.EXPECTATION_FAILED);
         }
     }
@@ -130,15 +133,15 @@ public class PandHistoryService {
             Optional<PandHistory> pandHistory = pandHistoryRepository.findById(id);
 
             Optional<Pand> pand = pandsRepository.findById(pandHistory.get().getPandId());
-            pand.get().setRestQuantity(pand.get().getRestQuantity() + pandHistory.get().getAdditionalQuantity());
-            pand.get().setMockQuantity(pand.get().getRestQuantity() + pandHistory.get().getAdditionalQuantity());
-            pand.get().setTotalQuantity(pand.get().getTotalQuantity() + pandHistory.get().getAdditionalQuantity());
+            pand.get().setRestQuantity(pand.get().getRestQuantity() - pandHistory.get().getAdditionalQuantity());
+            pand.get().setMockQuantity(pand.get().getRestQuantity() - pandHistory.get().getAdditionalQuantity());
+            pand.get().setTotalQuantity(pand.get().getTotalQuantity() - pandHistory.get().getAdditionalQuantity());
             pandsRepository.save(pand.get());
 
             pandHistoryRepository.delete(pandHistory.get());
             return new ResponseEntity<>(pandHistory.get(), HttpStatus.OK);
         }catch (Exception e){
-            e.printStackTrace();
+            logger.error("Error while processing return JobOrder",e);
             return new ResponseEntity<>(null, HttpStatus.EXPECTATION_FAILED);
         }
     }

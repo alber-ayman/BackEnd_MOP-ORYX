@@ -127,17 +127,17 @@ public class RestQuantityInPandsService {
             firstRow9.setCellStyle(cellStyle);
             firstRow.createCell(8).setCellValue("Thickness");
             firstRow10.setCellStyle(cellStyle);
-            firstRow.createCell(9).setCellValue("Height");
-            firstRow11.setCellStyle(cellStyle);
-            firstRow.createCell(10).setCellValue("Width");
+//            firstRow.createCell(9).setCellValue("Height");
+//            firstRow11.setCellStyle(cellStyle);
+//            firstRow.createCell(10).setCellValue("Width");
             firstRow12.setCellStyle(cellStyle);
-            firstRow.createCell(11).setCellValue("Unit");
+            firstRow.createCell(9).setCellValue("Unit");
             firstRow5.setCellStyle(cellStyle);
 
-            firstRow.createCell(12).setCellValue("Rest Quantity");
+            firstRow.createCell(10).setCellValue("Rest Quantity");
             firstRow13.setCellStyle(cellStyle);
 
-            firstRow.createCell(13).setCellValue("Total");
+            firstRow.createCell(11).setCellValue("Total");
             firstRow14.setCellStyle(cellStyle);
 //
 //            firstRow.createCell(15).setCellValue("Total In Job Orders");
@@ -196,19 +196,19 @@ public class RestQuantityInPandsService {
                     thickness.setCellValue(pand.getThickness());
                     thickness.setCellStyle(cellStyle);
 
-                    Cell height = row.createCell(9);
-                    height.setCellValue(pand.getHeight());
-                    height.setCellStyle(cellStyle);
+//                    Cell height = row.createCell(9);
+//                    height.setCellValue(pand.getHeight());
+//                    height.setCellStyle(cellStyle);
+//
+//                    Cell width = row.createCell(10);
+//                    width.setCellValue(pand.getWidth());
+//                    width.setCellStyle(cellStyle);
 
-                    Cell width = row.createCell(10);
-                    width.setCellValue(pand.getWidth());
-                    width.setCellStyle(cellStyle);
-
-                    Cell unit = row.createCell(11);
+                    Cell unit = row.createCell(9);
                     unit.setCellValue(pand.getUnit());
                     unit.setCellStyle(cellStyle);
 
-                    Cell quantity = row.createCell(12);
+                    Cell quantity = row.createCell(10);
                     quantity.setCellValue(pand.getRestQuantity());
                     quantity.setCellStyle(cellStyle);
 
@@ -220,7 +220,7 @@ public class RestQuantityInPandsService {
                 Row rowResult = sheet.createRow(rowIdx);
 //                Double result = pandsRepository.getSumByUnit(pands.get(i).getProjectCode(), pands.get(i).getUnit());
 
-                Cell totalQuantity = rowResult.createCell(13);
+                Cell totalQuantity = rowResult.createCell(11);
                 totalQuantity.setCellValue(result);
                 totalQuantity.setCellStyle(cellStyle);
 
@@ -325,43 +325,43 @@ public class RestQuantityInPandsService {
         sheet.getCells().get("F5").putValue("Thickness");
         sheet.getCells().get("F5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("G5").putValue("Height");
+//        sheet.getCells().get("G5").putValue("Height");
+//        sheet.getCells().get("G5").setStyle(tableHeaderStyle);
+//
+//        sheet.getCells().get("H5").putValue("Width");
+//        sheet.getCells().get("H5").setStyle(tableHeaderStyle);
+
+        sheet.getCells().get("G5").putValue("Unit");
         sheet.getCells().get("G5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("H5").putValue("Width");
+        sheet.getCells().get("H5").putValue("Rest Quantity");
         sheet.getCells().get("H5").setStyle(tableHeaderStyle);
 
-        sheet.getCells().get("I5").putValue("Unit");
+        sheet.getCells().get("I5").putValue("Total");
         sheet.getCells().get("I5").setStyle(tableHeaderStyle);
-
-        sheet.getCells().get("J5").putValue("Rest Quantity");
-        sheet.getCells().get("J5").setStyle(tableHeaderStyle);
-
-        sheet.getCells().get("K5").putValue("Total");
-        sheet.getCells().get("K5").setStyle(tableHeaderStyle);
 
         InputStream imageStream = new ClassPathResource("static/ORYX.jpeg").getInputStream();
 
         // Add the image to the worksheet (X, Y coordinates in pixels)
         // Place the image inside the merged cells (A1:C5)
-        int pictureIndex = sheet.getPictures().add(0, 10, imageStream);
+        int pictureIndex = sheet.getPictures().add(0, 6, imageStream);
 
         // Get the added picture
         Picture picture = sheet.getPictures().get(pictureIndex);
 
         // Optionally, set the picture to fit within the merged area
         picture.setPlacement(PlacementType.MOVE);
-        picture.setWidthScale(40); // Scale the image to fit width
-        picture.setHeightScale(20);
+        picture.setWidthScale(80); // Scale the image to fit width
+        picture.setHeightScale(40);
 
         Cells cells = sheet.getCells();
-        cells.merge(1, 5, 2, 3);
+        cells.merge(1, 3, 2, 3);
 
         // Assign a value to the merged cell
 //        cells.get(3, 4).setValue("Total بالوحدات");
 //        sheet.getCells().get("E3").setStyle(titleStyle);
 
-        com.aspose.cells.Cell mergedCell = cells.get(1, 5);
+        com.aspose.cells.Cell mergedCell = cells.get(1, 3);
         mergedCell.setValue("Total By Units");
 
         // Modify the style to set font size to 16
@@ -418,17 +418,17 @@ public class RestQuantityInPandsService {
                 sheet.getCells().get("F" + rowIdx).putValue(pands.get(i).getThickness());
                 sheet.getCells().get("F" + rowIdx).setStyle(discriptionDataStyle);
 
-                sheet.getCells().get("G" + rowIdx).putValue(pands.get(i).getHeight());
+//                sheet.getCells().get("G" + rowIdx).putValue(pands.get(i).getHeight());
+//                sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
+//
+//                sheet.getCells().get("H" + rowIdx).putValue(pands.get(i).getWidth());
+//                sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
+
+                sheet.getCells().get("G" + rowIdx).putValue(pands.get(i).getUnit());
                 sheet.getCells().get("G" + rowIdx).setStyle(discriptionDataStyle);
 
-                sheet.getCells().get("H" + rowIdx).putValue(pands.get(i).getWidth());
+                sheet.getCells().get("H" + rowIdx).putValue(pands.get(i).getRestQuantity());
                 sheet.getCells().get("H" + rowIdx).setStyle(discriptionDataStyle);
-
-                sheet.getCells().get("I" + rowIdx).putValue(pands.get(i).getUnit());
-                sheet.getCells().get("I" + rowIdx).setStyle(discriptionDataStyle);
-
-                sheet.getCells().get("J" + rowIdx).putValue(pands.get(i).getRestQuantity());
-                sheet.getCells().get("J" + rowIdx).setStyle(discriptionDataStyle);
 
 
                 result += pands.get(i).getRestQuantity();
@@ -436,8 +436,8 @@ public class RestQuantityInPandsService {
                 rowIdx++;
             }
 
-            sheet.getCells().get("K" + rowIdx).putValue(result);
-            sheet.getCells().get("K" + rowIdx).setStyle(shadowStyle);
+            sheet.getCells().get("I" + rowIdx).putValue(result);
+            sheet.getCells().get("I" + rowIdx).setStyle(shadowStyle);
 
 
             rowIdx++;
